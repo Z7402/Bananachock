@@ -25,17 +25,22 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Fix gradlew permissions and regenerate wrapper
+      - name: Verify Flutter
+        run: flutter --version
+
+      - name: Fix gradlew
+        run: chmod +x android/gradlew
+
+      - name: Download gradle wrapper jar
         run: |
-          chmod +x android/gradlew
-          cd android
-          export CI=true
-          # Try flutter's built-in way: use flutter to run the build directly
-          flutter build apk --debug --target-platform android-arm64
+          cd android/gradle/wrapper
+          curl -sL -o gradle-wrapper.jar "https://github.com/gradle/gradle/raw/v8.1.1/gradle/wrapper/gradle-wrapper.jar"
+          ls -la
 
-      - run: flutter pub get
+      - name: Install dependencies
+        run: flutter pub get
 
-      - name: Build APK directly with flutter
+      - name: Build APK (ARM64 debug)
         run: flutter build apk --debug --target-platform android-arm64
 
       - uses: actions/upload-artifact@v4
