@@ -14,10 +14,14 @@ class WallpaperNotifier extends StateNotifier<WallpaperState> {
 
   static const _wallpaperImageKey = "bananachock_wallpaper_image";
 
-  Future<void> pickWallpaper(BuildContext context) async {
+  Future<bool> pickWallpaper() async {
     final picker = ImagePicker();
-    final xFile = await picker.pickImage(source: ImageSource.gallery, maxWidth: 2048);
-    if (xFile == null) return;
+    final xFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 2048,
+      imageQuality: 85,
+    );
+    if (xFile == null) return false;
 
     final file = File(xFile.path);
     final bytes = await file.readAsBytes();
@@ -40,9 +44,10 @@ class WallpaperNotifier extends StateNotifier<WallpaperState> {
       mutedColor: muted,
       lightMutedColor: lightMuted,
     );
+    return true;
   }
 
-  void removeWallpaper() async {
+  Future<void> removeWallpaper() async {
     state = const WallpaperState();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_wallpaperImageKey);
@@ -89,7 +94,7 @@ class WallpaperState {
 
   bool get hasWallpaper => imageBytes != null;
   Color get primaryAccent => vibrantColor ?? dominantColor;
-  Color get mutedAccent => mutedColor ?? primaryAccent.withOpacity(0.6);
+  Color get mutedAccent => mutedColor ?? primaryAccent.withValues(alpha: 0.6);
 }
 
 final wallpaperProvider = StateNotifierProvider<WallpaperNotifier, WallpaperState>((ref) {

@@ -2,7 +2,6 @@ import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:dynamic_color/dynamic_color.dart";
 import "screen_splash.dart";
-import "screen_main.dart";
 import "provider_theme.dart";
 import "provider_wallpaper.dart";
 

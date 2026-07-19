@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'provider_task.dart';
-import 'provider_wallpaper.dart';
 import 'model_task_record.dart';
 import 'widget_add_task_dialog.dart';
 
@@ -32,8 +31,6 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> with Single
   @override
   Widget build(BuildContext context) {
     final taskList = ref.watch(taskProvider);
-    final colorScheme = Theme.of(context).colorScheme;
-
     final todayTasks = taskList.where((t) =>
         t.date.year == _selectedDate.year && t.date.month == _selectedDate.month && t.date.day == _selectedDate.day).toList();
 
@@ -112,15 +109,15 @@ class _DailyView extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [cs.primaryContainer, cs.primaryContainer.withOpacity(0.3)]),
+            gradient: LinearGradient(colors: [cs.primaryContainer, cs.primaryContainer.withValues(alpha: 0.3)]),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(children: [
-            Text('今日专注', style: TextStyle(fontSize: 13, color: cs.onPrimaryContainer.withOpacity(0.7))),
+            Text('今日专注', style: TextStyle(fontSize: 13, color: cs.onPrimaryContainer.withValues(alpha: 0.7))),
             const SizedBox(height: 4),
             Text('${(totalMinutes / 60).toStringAsFixed(1)} h', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w700, color: cs.onPrimaryContainer)),
             const SizedBox(height: 4),
-            Text('共 ${todayTasks.length} 个任务', style: TextStyle(fontSize: 12, color: cs.onPrimaryContainer.withOpacity(0.6))),
+            Text('共 ${todayTasks.length} 个任务', style: TextStyle(fontSize: 12, color: cs.onPrimaryContainer.withValues(alpha: 0.6))),
           ]),
         ),
         const SizedBox(height: 20),
@@ -166,9 +163,9 @@ class _WeeklyView extends StatelessWidget {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(gradient: LinearGradient(colors: [cs.secondaryContainer, cs.secondaryContainer.withOpacity(0.3)]), borderRadius: BorderRadius.circular(16)),
+          decoration: BoxDecoration(gradient: LinearGradient(colors: [cs.secondaryContainer, cs.secondaryContainer.withValues(alpha: 0.3)]), borderRadius: BorderRadius.circular(16)),
           child: Column(children: [
-            Text('本周总计', style: TextStyle(fontSize: 13, color: cs.onSecondaryContainer.withOpacity(0.7))),
+            Text('本周总计', style: TextStyle(fontSize: 13, color: cs.onSecondaryContainer.withValues(alpha: 0.7))),
             Text('${totalWeek.toStringAsFixed(1)} h', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w700, color: cs.onSecondaryContainer)),
           ]),
         ),
@@ -219,9 +216,9 @@ class _MonthlyView extends StatelessWidget {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(gradient: LinearGradient(colors: [cs.tertiaryContainer, cs.tertiaryContainer.withOpacity(0.3)]), borderRadius: BorderRadius.circular(16)),
+          decoration: BoxDecoration(gradient: LinearGradient(colors: [cs.tertiaryContainer, cs.tertiaryContainer.withValues(alpha: 0.3)]), borderRadius: BorderRadius.circular(16)),
           child: Column(children: [
-            Text('${now.month}月总计', style: TextStyle(fontSize: 13, color: cs.onTertiaryContainer.withOpacity(0.7))),
+            Text('${now.month}月总计', style: TextStyle(fontSize: 13, color: cs.onTertiaryContainer.withValues(alpha: 0.7))),
             Text('${totalMonth.toStringAsFixed(1)} h', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w700, color: cs.onTertiaryContainer)),
           ]),
         ),
@@ -233,7 +230,7 @@ class _MonthlyView extends StatelessWidget {
           maxY: maxY,
           barGroups: dailyHours.asMap().entries.map((e) => BarChartGroupData(
             x: e.key,
-            barRods: [BarChartRodData(toY: e.value, color: e.value > 0 ? cs.primary : cs.outlineVariant.withOpacity(0.3), width: 4, borderRadius: BorderRadius.circular(2))],
+            barRods: [BarChartRodData(toY: e.value, color: e.value > 0 ? cs.primary : cs.outlineVariant.withValues(alpha: 0.3), width: 4, borderRadius: BorderRadius.circular(2))],
           )).toList(),
           gridData: FlGridData(show: true, drawVerticalLine: false, horizontalInterval: maxY / 4),
           titlesData: FlTitlesData(
@@ -324,7 +321,7 @@ class _WeeklyChart extends StatelessWidget {
         spots: dailyHours.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList(),
         isCurved: true, curveSmoothness: 0.35, color: cs.primary, barWidth: 3, isStrokeCapRound: true,
         dotData: FlDotData(show: true, getDotPainter: (s, x, b, i) => FlDotCirclePainter(radius: 4, color: cs.primary, strokeWidth: 2, strokeColor: cs.surface)),
-        belowBarData: BarAreaData(show: true, gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [cs.primary.withOpacity(0.2), cs.primary.withOpacity(0.02)])),
+        belowBarData: BarAreaData(show: true, gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [cs.primary.withValues(alpha: 0.2), cs.primary.withValues(alpha: 0.02)])),
       )],
     ));
   }

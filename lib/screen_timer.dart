@@ -4,7 +4,6 @@ import 'widget_timer_animation.dart';
 import 'provider_timer.dart';
 import 'provider_quotes.dart';
 import 'provider_wallpaper.dart';
-import 'model_task_record.dart';
 
 /// 计时器主页面：包含番茄钟倒计时 / 正向计时器
 /// 集成海浪起伏+太阳东升西落动画、名言警句
@@ -85,17 +84,17 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: cs.surfaceContainerLow.withOpacity(0.6),
+                  color: cs.surfaceContainerLow.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(quote.text, style: TextStyle(fontSize: 12, color: cs.onSurface.withOpacity(0.75), height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    Text(quote.text, style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.75), height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
                     if (quote.author.isNotEmpty) ...[
                       const SizedBox(height: 2),
-                      Text('\u2014\u2014 ' + quote.author, style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant.withOpacity(0.5), fontStyle: FontStyle.italic)),
+                      Text('\u2014\u2014 ${quote.author}', style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant.withValues(alpha: 0.5), fontStyle: FontStyle.italic)),
                     ],
                   ],
                 ),
@@ -139,7 +138,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
                   scale: timerState.isRunning ? _timePulseAnim.value : 1.0,
                   child: Text(
                     timerState.formattedTime,
-                    style: TextStyle(fontSize: 56, fontWeight: FontWeight.w200, letterSpacing: 6, color: cs.onSurface, shadows: [Shadow(color: cs.primary.withOpacity(0.3), blurRadius: 20)]),
+                    style: TextStyle(fontSize: 56, fontWeight: FontWeight.w200, letterSpacing: 6, color: cs.onSurface, shadows: [Shadow(color: cs.primary.withValues(alpha: 0.3), blurRadius: 20)]),
                   ),
                 ),
               ],

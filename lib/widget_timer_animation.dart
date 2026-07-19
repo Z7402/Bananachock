@@ -96,8 +96,8 @@ class _SunWavePainter extends CustomPainter {
     final sunProgressNorm = (sunY - (cy - 20)) / (-80);
     final sunRadius = 28 + 8 * sunProgressNorm.clamp(0.0, 1.0);
 
-    canvas.drawCircle(Offset(cx, sunY), sunRadius * 2.2, Paint()..shader = RadialGradient(colors: [sunColor.withOpacity(0.4), sunColor.withOpacity(0)]).createShader(Rect.fromCircle(center: Offset(cx, sunY), radius: sunRadius * 2.2)));
-    canvas.drawCircle(Offset(cx, sunY), sunRadius, Paint()..shader = RadialGradient(colors: [sunColor, sunColor.withOpacity(0.6)], stops: const [0.3, 1.0]).createShader(Rect.fromCircle(center: Offset(cx, sunY), radius: sunRadius)));
+    canvas.drawCircle(Offset(cx, sunY), sunRadius * 2.2, Paint()..shader = RadialGradient(colors: [sunColor.withValues(alpha: 0.4), sunColor.withValues(alpha: 0)]).createShader(Rect.fromCircle(center: Offset(cx, sunY), radius: sunRadius * 2.2)));
+    canvas.drawCircle(Offset(cx, sunY), sunRadius, Paint()..shader = RadialGradient(colors: [sunColor, sunColor.withValues(alpha: 0.6)], stops: const [0.3, 1.0]).createShader(Rect.fromCircle(center: Offset(cx, sunY), radius: sunRadius)));
 
     final seaLevel = cy + 40;
     final amplitude = 12.0 + 4 * (isRunning ? progress : 0.3);
@@ -110,7 +110,7 @@ class _SunWavePainter extends CustomPainter {
       seaPath.lineTo(x, y);
     }
     seaPath..lineTo(w, h)..lineTo(0, h)..close();
-    final seaPaint = Paint()..shader = LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [sunColor.withOpacity(0.45), sunColor.withOpacity(0.08)]).createShader(Rect.fromLTWH(0, seaLevel - amplitude * 2, w, h - seaLevel + amplitude * 2));
+    final seaPaint = Paint()..shader = LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [sunColor.withValues(alpha: 0.45), sunColor.withValues(alpha: 0.08)]).createShader(Rect.fromLTWH(0, seaLevel - amplitude * 2, w, h - seaLevel + amplitude * 2));
     canvas.save(); canvas.clipPath(skyPath); canvas.drawPath(seaPath, seaPaint);
 
     final seaPath2 = Path()..moveTo(0, seaLevel + 4);
@@ -119,15 +119,15 @@ class _SunWavePainter extends CustomPainter {
       seaPath2.lineTo(x, y);
     }
     seaPath2..lineTo(w, h)..lineTo(0, h)..close();
-    canvas.drawPath(seaPath2, Paint()..shader = LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [sunColor.withOpacity(0.3), sunColor.withOpacity(0.02)]).createShader(Rect.fromLTWH(0, seaLevel + 4, w, h - seaLevel)));
+    canvas.drawPath(seaPath2, Paint()..shader = LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [sunColor.withValues(alpha: 0.3), sunColor.withValues(alpha: 0.02)]).createShader(Rect.fromLTWH(0, seaLevel + 4, w, h - seaLevel)));
     canvas.restore();
 
-    canvas.drawCircle(Offset(cx, cy - 10), w * 0.42, Paint()..color = Colors.white.withOpacity(0.15)..style = PaintingStyle.stroke..strokeWidth = 3);
+    canvas.drawCircle(Offset(cx, cy - 10), w * 0.42, Paint()..color = Colors.white.withValues(alpha: 0.15)..style = PaintingStyle.stroke..strokeWidth = 3);
     if (progress > 0.01) {
       final r = Rect.fromCircle(center: Offset(cx, cy - 10), radius: w * 0.42);
-      canvas.drawArc(r, -pi / 2, 2 * pi * progress, false, Paint()..style = PaintingStyle.stroke..strokeWidth = 3..strokeCap = StrokeCap.round..color = sunColor.withOpacity(0.8));
+      canvas.drawArc(r, -pi / 2, 2 * pi * progress, false, Paint()..style = PaintingStyle.stroke..strokeWidth = 3..strokeCap = StrokeCap.round..color = sunColor.withValues(alpha: 0.8));
     }
-    canvas.drawPath(skyPath, Paint()..color = Colors.white.withOpacity(0.12)..style = PaintingStyle.stroke..strokeWidth = 1.5);
+    canvas.drawPath(skyPath, Paint()..color = Colors.white.withValues(alpha: 0.12)..style = PaintingStyle.stroke..strokeWidth = 1.5);
   }
 
   @override

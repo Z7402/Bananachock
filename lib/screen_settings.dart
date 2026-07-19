@@ -29,7 +29,7 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.wallpaper,
               title: "更换背景壁纸",
               subtitle: wallpaper.hasWallpaper ? "已设置壁纸，点击更换" : "使用本地图片自动适配色调",
-              onTap: () => ref.read(wallpaperProvider.notifier).pickWallpaper(context),
+              onTap: () => _pickWallpaper(context, ref),
             ),
             if (wallpaper.hasWallpaper)
               _Item(
@@ -62,7 +62,7 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.brightness_high,
               title: "保持屏幕常亮",
               subtitle: "计时期间防止熄屏",
-              onToggle: (v) => _showComingSoon(context, "屏幕常亮已" + (v ? "开启" : "关闭")),
+              onToggle: (v) => _showComingSoon(context, "屏幕常亮已${v ? "开启" : "关闭"}"),
             ),
           ]),
           const SizedBox(height: 20),
@@ -74,8 +74,9 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () async {
                 final prefs = await SharedPreferences.getInstance();
                 final tasksJson = prefs.getString("bananachock_tasks") ?? "";
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("数据已准备导出（共 " + tasksJson.length.toString() + " 字节）")),
+                  SnackBar(content: Text("数据已准备导出（共 ${tasksJson.length} 字节）")),
                 );
               },
             ),
@@ -98,6 +99,21 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _pickWallpaper(BuildContext context, WidgetRef ref) async {
+    try {
+      final selected = await ref.read(wallpaperProvider.notifier).pickWallpaper();
+      if (!context.mounted || !selected) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("壁纸已更新")),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("无法读取所选图片，请重试")),
+      );
+    }
   }
 
   String _themeName(AppThemeMode mode) {
