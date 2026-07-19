@@ -22,16 +22,14 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Regenerate gradle wrapper from scratch
+      - name: Remove broken gradle and let flutter rebuild
         run: |
-          cd android
-          rm -rf gradle
-          gradle wrapper --gradle-version 8.1.1
-          ls -la gradle/wrapper/
+          rm -rf android/gradle android/gradlew android/gradlew.bat
+          flutter create --platforms android .
+          flutter pub get
 
-      - run: flutter pub get
-
-      - run: flutter build apk --debug --target-platform android-arm64
+      - name: Build APK
+        run: flutter build apk --debug --target-platform android-arm64
 
       - uses: actions/upload-artifact@v4
         with:
