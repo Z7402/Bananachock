@@ -25,22 +25,17 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Verify Flutter
-        run: flutter --version
-
-      - name: Fix gradlew
-        run: chmod +x android/gradlew
-
-      - name: Download gradle wrapper jar
+      - name: Download gradle wrapper jar (fresh copy)
         run: |
-          cd android/gradle/wrapper
-          curl -sL -o gradle-wrapper.jar "https://github.com/gradle/gradle/raw/v8.1.1/gradle/wrapper/gradle-wrapper.jar"
-          ls -la
+          rm -f android/gradle/wrapper/gradle-wrapper.jar
+          cd android
+          gradle wrapper --gradle-version 8.1.1
+          ls -la gradle/wrapper/
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build APK (ARM64 debug)
+      - name: Build APK
         run: flutter build apk --debug --target-platform android-arm64
 
       - uses: actions/upload-artifact@v4
