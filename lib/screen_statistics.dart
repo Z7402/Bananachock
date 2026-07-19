@@ -164,7 +164,7 @@ class _WeeklyTrendChart extends StatelessWidget {
 
     return LineChart(LineChartData(
       gridData: FlGridData(show: true, drawVerticalLine: false, horizontalInterval: maxY / 4,
-        getDrawingHorizontalLine: (v) => FlLine(color: cs.outlineVariant.withOpacity(0.3), strokeWidth: 1)),
+        getDrawingHorizontalLine: (v) => FlLine(color: cs.outlineVariant.withValues(alpha: 0.3), strokeWidth: 1)),
       titlesData: FlTitlesData(
         leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 30,
           getTitlesWidget: (v, m) => Text('${v.toInt()}h', style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)))),
@@ -182,7 +182,7 @@ class _WeeklyTrendChart extends StatelessWidget {
         isCurved: true, curveSmoothness: 0.3, color: cs.primary, barWidth: 3, isStrokeCapRound: true,
         dotData: FlDotData(show: true, getDotPainter: (s, x, b, i) => FlDotCirclePainter(radius: 4, color: cs.primary, strokeWidth: 2, strokeColor: cs.surface)),
         belowBarData: BarAreaData(show: true, gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
-          colors: [cs.primary.withOpacity(0.2), cs.primary.withOpacity(0.02)])),
+          colors: [cs.primary.withValues(alpha: 0.2), cs.primary.withValues(alpha: 0.02)])),
       )],
     ));
   }

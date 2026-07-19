@@ -42,7 +42,7 @@ class _BreathingProgressState extends State<BreathingProgress> with TickerProvid
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: colorScheme.primary.withOpacity(0.2 * shadowOpacity),
+                color: colorScheme.primary.withValues(alpha: 0.2 * shadowOpacity),
                 blurRadius: 24 * shadowOpacity + 8,
                 spreadRadius: 8 * shadowOpacity,
               ),
@@ -81,12 +81,12 @@ class _WaveProgressPainter extends CustomPainter {
     final sweepAngle = 2 * pi * progress;
     if (sweepAngle > 0.01) {
       final wavePaint = Paint()
-        ..shader = SweepGradient(colors: [primaryColor.withOpacity(0.6), primaryColor], startAngle: 0, endAngle: sweepAngle).createShader(rect)
+        ..shader = SweepGradient(colors: [primaryColor.withValues(alpha: 0.6), primaryColor], startAngle: 0, endAngle: sweepAngle).createShader(rect)
         ..style = PaintingStyle.stroke..strokeWidth = 12..strokeCap = StrokeCap.round;
       canvas.drawArc(rect, -pi / 2, sweepAngle, false, wavePaint);
     }
 
-    final innerPaint = Paint()..color = primaryColor.withOpacity(0.1)..style = PaintingStyle.fill;
+    final innerPaint = Paint()..color = primaryColor.withValues(alpha: 0.1)..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius - 18, innerPaint);
   }
 

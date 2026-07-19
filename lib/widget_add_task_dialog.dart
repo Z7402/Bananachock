@@ -26,7 +26,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
           TextField(controller: _titleController, decoration: const InputDecoration(labelText: '任务名称', border: OutlineInputBorder())),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
-            value: _selectedCategory,
+            initialValue: _selectedCategory,
             decoration: const InputDecoration(labelText: '分类', border: OutlineInputBorder()),
             items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
             onChanged: (v) => setState(() => _selectedCategory = v!),
