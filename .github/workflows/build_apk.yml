@@ -19,25 +19,24 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Gradle wrapper from scratch
-        working-directory: android
-        run: |
-          rm -rf gradle/wrapper/gradle-wrapper.jar
-          curl -sL "https://services.gradle.org/distributions/gradle-8.1.1-all.zip" -o /tmp/gradle.zip
-          unzip -q -o /tmp/gradle.zip -d /tmp/gradle-extract
-          cp /tmp/gradle-extract/gradle-8.1.1/lib/gradle-wrapper-*.jar gradle/wrapper/gradle-wrapper.jar 2>/dev/null || \
-          curl -sL "https://raw.githubusercontent.com/gradle/gradle/v8.1.1/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
-          ls -la gradle/wrapper/
-          java -jar gradle/wrapper/gradle-wrapper.jar --version 2>&1 || echo "Wrapper test done"
-
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.27.0'
           channel: 'stable'
           cache: true
 
+      - name: Fix gradlew permissions and regenerate wrapper
+        run: |
+          chmod +x android/gradlew
+          cd android
+          export CI=true
+          # Try flutter's built-in way: use flutter to run the build directly
+          flutter build apk --debug --target-platform android-arm64
+
       - run: flutter pub get
-      - run: flutter build apk --debug --target-platform android-arm64
+
+      - name: Build APK directly with flutter
+        run: flutter build apk --debug --target-platform android-arm64
 
       - uses: actions/upload-artifact@v4
         with:
