@@ -1,16 +1,26 @@
-name: Build Bananachock APK
+name: Build and release Android ARM64
+
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+concurrency:
+  group: android-arm64-release-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    timeout-minutes: 30
 
-      - uses: actions/setup-java@v4
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -20,31 +30,77 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Fix gradle wrapper
-        run: |
-          cd android
-          curl -sL -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.1.1/gradle/wrapper/gradle-wrapper.jar
-          chmod +x gradlew
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Decode keystore
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Restore release signing key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
-          ls -la android/app/upload-keystore.jks
+          for value in "$ANDROID_KEYSTORE_BASE64" "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEY_ALIAS" "$ANDROID_KEY_PASSWORD"; do
+            if [ -z "$value" ]; then
+              echo "A required Android signing secret is missing." >&2
+              exit 1
+            fi
+          done
+          umask 077
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/bananachock-release.p12"
+          keytool -list \
+            -keystore "$RUNNER_TEMP/bananachock-release.p12" \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS" > /dev/null
 
-      - name: Create key.properties
+      - name: Build signed ARM64 release APK
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/bananachock-release.p12
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          echo "storePassword=\${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" > android/key.properties
-          echo "keyPassword=\${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
-          echo "keyAlias=\${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
-          echo "storeFile=upload-keystore.jks" >> android/key.properties
+          flutter build apk \
+            --release \
+            --target-platform android-arm64 \
+            --split-per-abi \
+            --build-number "$GITHUB_RUN_NUMBER"
+          source_apk="build/app/outputs/flutter-apk/app-arm64-v8a-release.apk"
+          test -f "$source_apk"
+          mkdir -p dist
+          cp "$source_apk" dist/Bananachock-arm64-v8a.apk
 
-      - name: Build Release APK
-        run: flutter build apk --release --target-platform android-arm64 --android-skip-build-dependency-validation
-
-      - uses: actions/upload-artifact@v4
+      - name: Upload ARM64 artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: bananachock-release-apk
-          path: build/app/outputs/flutter-apk/*.apk
+          name: bananachock-arm64-v8a
+          path: dist/Bananachock-arm64-v8a.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="build-${GITHUB_RUN_NUMBER}"
+          asset="dist/Bananachock-arm64-v8a.apk"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$tag" "$asset#Bananachock Android ARM64 APK" \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber
+          else
+            gh release create "$tag" "$asset#Bananachock Android ARM64 APK" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Bananachock build ${GITHUB_RUN_NUMBER}" \
+              --generate-notes \
+              --latest
+          fi
