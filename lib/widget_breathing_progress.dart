@@ -2,39 +2,84 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 /// 呼吸阴影动画 + 波浪进度圆弧组件
+/// 仅在 isRunning=true 且 progress>0 时运行动画
 class BreathingProgress extends StatefulWidget {
-  const BreathingProgress({super.key, this.size = 200.0, this.progress = 0.0});
+  const BreathingProgress({
+    super.key,
+    this.size = 200.0,
+    this.progress = 0.0,
+    this.isRunning = false,
+  });
   final double size;
   final double progress;
+  final bool isRunning;
 
   @override
   State<BreathingProgress> createState() => _BreathingProgressState();
 }
 
-class _BreathingProgressState extends State<BreathingProgress> with TickerProviderStateMixin {
-  late AnimationController _breathController;
-  late Animation<double> _shadowAnimation;
+class _BreathingProgressState extends State<BreathingProgress>
+    with TickerProviderStateMixin {
+  AnimationController? _breathController;
+  Animation<double>? _shadowAnimation;
+  bool _wasRunning = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _breathController = AnimationController(vsync: this, duration: const Duration(seconds: 3))..repeat(reverse: true);
-    _shadowAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(CurvedAnimation(parent: _breathController, curve: Curves.easeInOut));
+  void _ensureController() {
+    if (_breathController != null) return;
+    _breathController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
+    _shadowAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _breathController!, curve: Curves.easeInOut),
+    );
+  }
+
+  void _disposeController() {
+    _breathController?.dispose();
+    _breathController = null;
+    _shadowAnimation = null;
   }
 
   @override
   void dispose() {
-    _breathController.dispose();
+    _disposeController();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final running = widget.isRunning && widget.progress > 0;
+
+    if (running && !_wasRunning) {
+      _wasRunning = true;
+      _ensureController();
+    } else if (!running && _wasRunning) {
+      _wasRunning = false;
+      _disposeController();
+    }
+
     final colorScheme = Theme.of(context).colorScheme;
+
+    if (!running) {
+      return SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: CustomPaint(
+          size: Size(widget.size, widget.size),
+          painter: _WaveProgressPainter(
+            progress: widget.progress,
+            primaryColor: colorScheme.primary,
+            surfaceColor: colorScheme.surfaceContainerHighest,
+          ),
+        ),
+      );
+    }
+
     return AnimatedBuilder(
-      animation: _shadowAnimation,
+      animation: _shadowAnimation!,
       builder: (context, child) {
-        final shadowOpacity = _shadowAnimation.value;
+        final shadowOpacity = _shadowAnimation!.value;
         return Container(
           width: widget.size,
           height: widget.size,
@@ -42,7 +87,9 @@ class _BreathingProgressState extends State<BreathingProgress> with TickerProvid
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: colorScheme.primary.withValues(alpha: 0.2 * shadowOpacity),
+                color: colorScheme.primary.withValues(
+                  alpha: 0.2 * shadowOpacity,
+                ),
                 blurRadius: 24 * shadowOpacity + 8,
                 spreadRadius: 8 * shadowOpacity,
               ),
@@ -55,7 +102,7 @@ class _BreathingProgressState extends State<BreathingProgress> with TickerProvid
         size: Size(widget.size, widget.size),
         painter: _WaveProgressPainter(
           progress: widget.progress,
-          primaryColor: Theme.of(context).colorScheme.primary,
+          primaryColor: colorScheme.primary,
           surfaceColor: colorScheme.surfaceContainerHighest,
         ),
       ),
@@ -67,7 +114,11 @@ class _WaveProgressPainter extends CustomPainter {
   final double progress;
   final Color primaryColor;
   final Color surfaceColor;
-  _WaveProgressPainter({required this.progress, required this.primaryColor, required this.surfaceColor});
+  _WaveProgressPainter({
+    required this.progress,
+    required this.primaryColor,
+    required this.surfaceColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -75,22 +126,38 @@ class _WaveProgressPainter extends CustomPainter {
     final radius = size.width / 2 - 12;
     final rect = Rect.fromCircle(center: center, radius: radius);
 
-    final bgPaint = Paint()..color = surfaceColor..style = PaintingStyle.stroke..strokeWidth = 12;
+    final bgPaint = Paint()
+      ..color = surfaceColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 12;
     canvas.drawCircle(center, radius, bgPaint);
 
     final sweepAngle = 2 * pi * progress;
     if (sweepAngle > 0.01) {
       final wavePaint = Paint()
-        ..shader = SweepGradient(colors: [primaryColor.withValues(alpha: 0.6), primaryColor], startAngle: 0, endAngle: sweepAngle).createShader(rect)
-        ..style = PaintingStyle.stroke..strokeWidth = 12..strokeCap = StrokeCap.round;
+        ..shader = SweepGradient(
+          colors: [
+            primaryColor.withValues(alpha: 0.6),
+            primaryColor,
+          ],
+          startAngle: 0,
+          endAngle: sweepAngle,
+        ).createShader(rect)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 12
+        ..strokeCap = StrokeCap.round;
       canvas.drawArc(rect, -pi / 2, sweepAngle, false, wavePaint);
     }
 
-    final innerPaint = Paint()..color = primaryColor.withValues(alpha: 0.1)..style = PaintingStyle.fill;
+    final innerPaint = Paint()
+      ..color = primaryColor.withValues(alpha: 0.1)
+      ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius - 18, innerPaint);
   }
 
   @override
   bool shouldRepaint(covariant _WaveProgressPainter oldDelegate) =>
-      oldDelegate.progress != progress || oldDelegate.primaryColor != primaryColor || oldDelegate.surfaceColor != surfaceColor;
+      oldDelegate.progress != progress
+      || oldDelegate.primaryColor != primaryColor
+      || oldDelegate.surfaceColor != surfaceColor;
 }

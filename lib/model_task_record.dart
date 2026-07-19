@@ -5,6 +5,8 @@ class TaskRecord {
   final String category;
   final DateTime date;
   final Duration duration;
+  /// 番茄钟专注分钟数（用于区分是自定义时间）
+  final int focusMinutes;
 
   TaskRecord({
     required this.id,
@@ -12,6 +14,7 @@ class TaskRecord {
     required this.category,
     required this.date,
     required this.duration,
+    this.focusMinutes = 0,
   });
 
   factory TaskRecord.fromJson(Map<String, dynamic> json) {
@@ -21,6 +24,7 @@ class TaskRecord {
       category: json['category'] as String,
       date: DateTime.parse(json['date'] as String),
       duration: Duration(seconds: json['durationSeconds'] as int),
+      focusMinutes: (json['focusMinutes'] as int?) ?? 0,
     );
   }
 
@@ -31,6 +35,7 @@ class TaskRecord {
       'category': category,
       'date': date.toIso8601String(),
       'durationSeconds': duration.inSeconds,
+      'focusMinutes': focusMinutes,
     };
   }
 }
@@ -45,6 +50,8 @@ class TimerState {
   final int remainingSeconds;
   final int totalSeconds;
   final int completedPomodoros;
+  /// 番茄钟开始时的秒数，用于任务记录
+  final int startSeconds;
 
   const TimerState({
     required this.mode,
@@ -52,6 +59,7 @@ class TimerState {
     this.remainingSeconds = 0,
     this.totalSeconds = 25 * 60,
     this.completedPomodoros = 0,
+    this.startSeconds = 0,
   });
 
   TimerState copyWith({
@@ -60,6 +68,7 @@ class TimerState {
     int? remainingSeconds,
     int? totalSeconds,
     int? completedPomodoros,
+    int? startSeconds,
   }) {
     return TimerState(
       mode: mode ?? this.mode,
@@ -67,12 +76,15 @@ class TimerState {
       remainingSeconds: remainingSeconds ?? this.remainingSeconds,
       totalSeconds: totalSeconds ?? this.totalSeconds,
       completedPomodoros: completedPomodoros ?? this.completedPomodoros,
+      startSeconds: startSeconds ?? this.startSeconds,
     );
   }
 
   String get formattedTime {
-    final minutes = (remainingSeconds ~/ 60).toString().padLeft(2, '0');
-    final seconds = (remainingSeconds % 60).toString().padLeft(2, '0');
+    final minutes =
+        (remainingSeconds ~/ 60).toString().padLeft(2, '0');
+    final seconds =
+        (remainingSeconds % 60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
   }
 
