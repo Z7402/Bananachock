@@ -21,21 +21,13 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.0'
           channel: 'stable'
           cache: true
 
-      - name: Download gradle wrapper jar (fresh copy)
-        run: |
-          rm -f android/gradle/wrapper/gradle-wrapper.jar
-          cd android
-          gradle wrapper --gradle-version 8.1.1
-          ls -la gradle/wrapper/
+      - run: flutter --version
+      - run: flutter pub get
 
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build APK
+      - name: Build APK (debug, ARM64)
         run: flutter build apk --debug --target-platform android-arm64
 
       - uses: actions/upload-artifact@v4
