@@ -15,6 +15,11 @@ void main() {
       ),
     );
 
+    // The app starts on a two-second splash screen, followed by a
+    // 600-millisecond fade transition to MainScreen.
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(milliseconds: 600));
+
     expect(find.text('计时'), findsWidgets);
   });
 }
