@@ -22,8 +22,12 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Make gradlew executable
-        run: chmod +x android/gradlew
+      - name: Fix gradle wrapper
+        run: |
+          cd android/gradle/wrapper
+          curl -sL -o gradle-wrapper.jar "https://raw.githubusercontent.com/gradle/gradle/v8.1.1/gradle/wrapper/gradle-wrapper.jar"
+          ls -la gradle-wrapper.jar
+          chmod +x ../../gradlew
 
       - name: Install dependencies
         run: flutter pub get
