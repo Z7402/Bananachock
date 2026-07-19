@@ -3,8 +3,6 @@ name: Build Bananachock APK
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -24,11 +22,16 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - run: flutter --version
+      - name: Regenerate gradle wrapper from scratch
+        run: |
+          cd android
+          rm -rf gradle
+          gradle wrapper --gradle-version 8.1.1
+          ls -la gradle/wrapper/
+
       - run: flutter pub get
 
-      - name: Build APK (debug, ARM64)
-        run: flutter build apk --debug --target-platform android-arm64
+      - run: flutter build apk --debug --target-platform android-arm64
 
       - uses: actions/upload-artifact@v4
         with:
