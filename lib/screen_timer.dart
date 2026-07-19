@@ -315,7 +315,7 @@ class _PomodoroDurationSelectorState
               width: 60,
               child: TextField(
                 controller:
-                    TextEditingController(text: '\$_custom'),
+                    TextEditingController(text: '$_custom'),
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
                 decoration: const InputDecoration(

@@ -5,9 +5,8 @@ import 'provider_task.dart';
 
 /// 计时器状态 Notifier
 class TimerNotifier extends StateNotifier<TimerState> {
-  TimerNotifier(this._ref) : super(const TimerState(mode: TimerMode.pomodoro));
+  TimerNotifier() : super(const TimerState(mode: TimerMode.pomodoro));
 
-  final Ref _ref;
   Timer? _timer;
 
   void start() {
@@ -74,7 +73,7 @@ class TimerNotifier extends StateNotifier<TimerState> {
         duration: Duration(seconds: elapsed),
         focusMinutes: state.mode == TimerMode.pomodoro ? state.totalSeconds ~/ 60 : 0,
       );
-      _ref.read(taskProvider.notifier).addTask(task);
+      _onTaskComplete?.call(task);
     }
     state = state.copyWith(
       isRunning: false,
@@ -82,6 +81,12 @@ class TimerNotifier extends StateNotifier<TimerState> {
       completedPomodoros: state.completedPomodoros + 1,
       startSeconds: 0,
     );
+  }
+
+  void Function(TaskRecord)? _onTaskComplete;
+
+  void setOnTaskComplete(void Function(TaskRecord) callback) {
+    _onTaskComplete = callback;
   }
 
   @override
@@ -92,5 +97,9 @@ class TimerNotifier extends StateNotifier<TimerState> {
 }
 
 final timerProvider = StateNotifierProvider<TimerNotifier, TimerState>((ref) {
-  return TimerNotifier(ref);
+  final notifier = TimerNotifier();
+  notifier.setOnTaskComplete((task) {
+    ref.read(taskProvider.notifier).addTask(task);
+  });
+  return notifier;
 });
