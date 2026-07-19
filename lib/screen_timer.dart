@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'widget_timer_animation.dart';
 import 'provider_timer.dart';
+import 'model_task_record.dart';
 import 'provider_quotes.dart';
 import 'provider_wallpaper.dart';
 
