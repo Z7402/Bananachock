@@ -11,64 +11,45 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
-
-      - name: Fix android gradle for CI
+      - name: Fix android gradle
         run: |
+          rm -rf android/gradle android/gradlew android/gradlew.bat
           cd android
-          rm -rf gradle gradlew gradlew.bat
-          cat > build.gradle << 'EOF'
+          cat > build.gradle << 'GRADLE'
 buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
+    repositories { google(); mavenCentral() }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.7.3'
         classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0'
     }
 }
 allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
+    repositories { google(); mavenCentral() }
 }
 rootProject.buildDir = '../build'
-subprojects {
-    project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-subprojects {
-    project.evaluationDependsOn(':app')
-}
-tasks.register("clean", Delete) {
-    delete rootProject.buildDir
-}
-EOF
-          cat > settings.gradle << 'EOF'
+subprojects { project.buildDir = "${rootProject.buildDir}/${project.name}" }
+subprojects { project.evaluationDependsOn(':app') }
+tasks.register("clean", Delete) { delete rootProject.buildDir }
+GRADLE
+          cat > settings.gradle << 'SETTINGS'
 pluginManagement {
     def flutterSdkPath = { ->
         def properties = new Properties()
         file("local.properties").withInputStream { properties.load(it) }
         def flutterSdkPath = properties.getProperty("flutter.sdk")
-        assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
+        assert flutterSdkPath != null
         return flutterSdkPath
     }()
     includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
-    repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
+    repositories { google(); mavenCentral(); gradlePluginPortal() }
 }
 plugins {
     id "dev.flutter.flutter-plugin-loader" version "1.0.0"
@@ -76,12 +57,9 @@ plugins {
     id "org.jetbrains.kotlin.android" version "2.1.0" apply false
 }
 include ":app"
-EOF
-
+SETTINGS
       - run: flutter pub get
-
       - run: flutter build apk --debug --target-platform android-arm64
-
       - uses: actions/upload-artifact@v4
         with:
           name: bananachock-debug-apk
