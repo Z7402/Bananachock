@@ -22,51 +22,36 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0.0'
 }
 
-def releaseKeystorePath = System.getenv('ANDROID_KEYSTORE_PATH')
-def releaseKeystorePassword = System.getenv('ANDROID_KEYSTORE_PASSWORD')
-def releaseKeyAlias = System.getenv('ANDROID_KEY_ALIAS')
-def releaseKeyPassword = System.getenv('ANDROID_KEY_PASSWORD')
-
 android {
     namespace "com.example.bananachock"
     compileSdk 36
-    ndkVersion "28.2.13676358"
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '11'
     }
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
     }
 
-    signingConfigs {
-        release {
-            if (releaseKeystorePath != null) {
-                storeFile file(releaseKeystorePath)
-                storePassword releaseKeystorePassword
-                keyAlias releaseKeyAlias
-                keyPassword releaseKeyPassword
-            }
-        }
-    }
-
     defaultConfig {
         applicationId "com.example.bananachock"
         minSdkVersion flutter.minSdkVersion
-        targetSdk 34
+        targetSdk 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
 
+    ndkVersion "28.2.13676358"
+
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            signingConfig signingConfigs.debug
         }
     }
 }

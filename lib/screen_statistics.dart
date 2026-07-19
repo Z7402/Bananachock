@@ -236,7 +236,8 @@ class _WeeklyView extends StatelessWidget {
     final maxY = dailyHours.isEmpty
         ? 8.0
         : (dailyHours.reduce((a, b) => a > b ? a : b) * 1.3)
-            .clamp(2.0, 16.0);
+            .clamp(2.0, 16.0)
+            .toDouble();
     final totalWeek = dailyHours.fold(0.0, (a, b) => a + b);
 
     return SingleChildScrollView(
@@ -350,7 +351,8 @@ class _MonthlyView extends StatelessWidget {
     final maxY = dailyHours.isEmpty
         ? 8.0
         : (dailyHours.reduce((a, b) => a > b ? a : b) * 1.3)
-            .clamp(2.0, 16.0);
+            .clamp(2.0, 16.0)
+            .toDouble();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),

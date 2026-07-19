@@ -1,8 +1,13 @@
-import "package:flutter/material.dart";
-import "screen_main.dart";
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'screen_main.dart';
+import 'provider_wallpaper.dart';
 
+/// 启动加载页面 —— 带呼吸动画 + 动态太阳波浪
+/// 显示 2 秒后自动跳转到主屏幕（MainScreen）
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
@@ -73,6 +78,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // 脉冲 + 旋转动画图标
                 Transform.scale(
                   scale: _pulseAnim.value,
                   child: Transform.rotate(
@@ -85,13 +91,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         gradient: RadialGradient(
                           colors: [
                             colorScheme.primary,
-                            colorScheme.primary.withValues(alpha: 0.4),
+                            colorScheme.primary.withOpacity(0.4),
                           ],
                           stops: const [0.3, 1.0],
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: colorScheme.primary.withValues(alpha: 0.35 * _pulseAnim.value),
+                            color: colorScheme.primary.withOpacity(0.35 * _pulseAnim.value),
                             blurRadius: 32 * _pulseAnim.value,
                             spreadRadius: 8 * _pulseAnim.value,
                           ),
@@ -106,14 +112,30 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   ),
                 ),
                 const SizedBox(height: 32),
-                Text("Bananachock",
-                  style: TextStyle(fontSize: 34, fontWeight: FontWeight.w800, color: colorScheme.onSurface, letterSpacing: 2)),
+                // 标题
+                Text(
+                  'Bananachock',
+                  style: TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.onSurface,
+                    letterSpacing: 2,
+                  ),
+                ),
                 const SizedBox(height: 10),
-                Text("时间监控与管理",
-                  style: TextStyle(fontSize: 15, color: colorScheme.onSurfaceVariant, letterSpacing: 1.5)),
+                Text(
+                  '时间监控与管理',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: colorScheme.onSurfaceVariant,
+                    letterSpacing: 1.5,
+                  ),
+                ),
                 const SizedBox(height: 56),
+                // 波浪进度条
                 SizedBox(
-                  width: 120, height: 4,
+                  width: 120,
+                  height: 4,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(2),
                     child: LinearProgressIndicator(
@@ -123,8 +145,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   ),
                 ),
                 const SizedBox(height: 56),
-                Text("by schwarz and his assistant deepseek-v4-pro",
-                  style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5))),
+                Text(
+                  'by schwarz and his assistant deepseek-v4-pro',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                  ),
+                ),
               ],
             ),
           ),

@@ -5,17 +5,36 @@ import 'provider_task.dart';
 
 /// 计时器状态 Notifier
 class TimerNotifier extends StateNotifier<TimerState> {
-  TimerNotifier() : super(const TimerState(mode: TimerMode.pomodoro));
+  TimerNotifier()
+      : super(
+          const TimerState(
+            mode: TimerMode.pomodoro,
+            remainingSeconds: 25 * 60,
+          ),
+        );
 
   Timer? _timer;
 
   void start() {
     if (state.isRunning) return;
     _timer?.cancel();
-    final startSec = state.remainingSeconds;
+
+    // 完成后的番茄钟再次开始时，从当前设定时长创建新一轮。
+    final remaining = state.mode == TimerMode.pomodoro &&
+            state.remainingSeconds <= 0
+        ? state.totalSeconds
+        : state.remainingSeconds;
+    final isNewSession = state.startSeconds == 0;
+    final startSec = isNewSession ? remaining : state.startSeconds;
+    state = state.copyWith(
+      isRunning: true,
+      remainingSeconds: remaining,
+      startSeconds: startSec,
+    );
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (state.mode == TimerMode.pomodoro) {
-        if (state.remainingSeconds <= 0) {
+        if (state.remainingSeconds <= 1) {
+          state = state.copyWith(remainingSeconds: 0);
           _onComplete();
           return;
         }
@@ -24,7 +43,6 @@ class TimerNotifier extends StateNotifier<TimerState> {
         state = state.copyWith(remainingSeconds: state.remainingSeconds + 1);
       }
     });
-    state = state.copyWith(isRunning: true, startSeconds: startSec);
   }
 
   void pause() {
@@ -62,7 +80,8 @@ class TimerNotifier extends StateNotifier<TimerState> {
   void _onComplete() {
     _timer?.cancel();
     final elapsed = state.mode == TimerMode.pomodoro
-        ? state.totalSeconds - state.remainingSeconds
+        ? (state.startSeconds > 0 ? state.startSeconds : state.totalSeconds) -
+            state.remainingSeconds
         : state.remainingSeconds;
     if (elapsed > 0) {
       final task = TaskRecord(
@@ -71,7 +90,12 @@ class TimerNotifier extends StateNotifier<TimerState> {
         category: '学习',
         date: DateTime.now(),
         duration: Duration(seconds: elapsed),
-        focusMinutes: state.mode == TimerMode.pomodoro ? state.totalSeconds ~/ 60 : 0,
+        focusMinutes: state.mode == TimerMode.pomodoro
+            ? (state.startSeconds > 0
+                ? state.startSeconds
+                : state.totalSeconds) ~/
+                60
+            : 0,
       );
       _onTaskComplete?.call(task);
     }

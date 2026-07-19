@@ -106,7 +106,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Spacer(flex: 2),
-            _TimeDisplay(timeString: timerState.formattedTime),
+            ScaleTransition(
+              scale: _timePulseAnim,
+              child: _TimeDisplay(timeString: timerState.formattedTime),
+            ),
             const SizedBox(height: 16),
             _ProgressBar(progress: timerState.progress),
             const SizedBox(height: 48),
@@ -250,13 +253,15 @@ class _PomodoroDurationSelector extends StatefulWidget {
 
 class _PomodoroDurationSelectorState
     extends State<_PomodoroDurationSelector> {
-  final List<int> _presets = [5, 15, 25, 45, 60];
+  static const List<int> _presets = [5, 15, 25, 45, 60];
   late int _custom;
+  late final TextEditingController _customController;
 
   @override
   void initState() {
     super.initState();
     _custom = widget.currentMinutes;
+    _customController = TextEditingController(text: '$_custom');
   }
 
   @override
@@ -264,11 +269,25 @@ class _PomodoroDurationSelectorState
     super.didUpdateWidget(oldWidget);
     if (oldWidget.currentMinutes != widget.currentMinutes) {
       _custom = widget.currentMinutes;
+      final text = '$_custom';
+      if (_customController.text != text) {
+        _customController.value = TextEditingValue(
+          text: text,
+          selection: TextSelection.collapsed(offset: text.length),
+        );
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    _customController.dispose();
+    super.dispose();
   }
 
   void _onPreset(int m) {
     _custom = m;
+    _customController.text = '$m';
     widget.onChanged(m);
   }
 
@@ -298,7 +317,7 @@ class _PomodoroDurationSelectorState
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: ChoiceChip(
-                  label: Text('\$minutes min'),
+                  label: Text('$minutes min'),
                   selected: isSelected,
                   onSelected: (_) => _onPreset(minutes),
                   visualDensity: VisualDensity.compact,
@@ -314,8 +333,7 @@ class _PomodoroDurationSelectorState
             SizedBox(
               width: 60,
               child: TextField(
-                controller:
-                    TextEditingController(text: '$_custom'),
+                controller: _customController,
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
                 decoration: const InputDecoration(

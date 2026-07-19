@@ -22,7 +22,26 @@ class _BreathingProgressState extends State<BreathingProgress>
     with TickerProviderStateMixin {
   AnimationController? _breathController;
   Animation<double>? _shadowAnimation;
-  bool _wasRunning = false;
+  bool get _shouldAnimate => widget.isRunning && widget.progress > 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_shouldAnimate) {
+      _ensureController();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant BreathingProgress oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final wasRunning = oldWidget.isRunning && oldWidget.progress > 0;
+    if (_shouldAnimate && !wasRunning) {
+      _ensureController();
+    } else if (!_shouldAnimate && wasRunning) {
+      _disposeController();
+    }
+  }
 
   void _ensureController() {
     if (_breathController != null) return;
@@ -49,16 +68,7 @@ class _BreathingProgressState extends State<BreathingProgress>
 
   @override
   Widget build(BuildContext context) {
-    final running = widget.isRunning && widget.progress > 0;
-
-    if (running && !_wasRunning) {
-      _wasRunning = true;
-      _ensureController();
-    } else if (!running && _wasRunning) {
-      _wasRunning = false;
-      _disposeController();
-    }
-
+    final running = _shouldAnimate;
     final colorScheme = Theme.of(context).colorScheme;
 
     if (!running) {
