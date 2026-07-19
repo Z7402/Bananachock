@@ -12,33 +12,31 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.27.0'
           channel: 'stable'
           cache: true
 
-      - name: Verify Flutter
-        run: flutter --version
+      - name: Generate gradle wrapper (ensure jar is valid)
+        working-directory: android
+        run: |
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            gradle wrapper --gradle-version 8.1.1
+          fi
+          ls -la gradle/wrapper/
 
-      - name: Install dependencies
-        run: flutter pub get
+      - run: flutter pub get
+      - run: flutter build apk --debug --target-platform android-arm64
 
-      - name: Build Android APK (debug, ARM64)
-        run: flutter build apk --debug --target-platform android-arm64
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: bananachock-debug-apk
           path: build/app/outputs/flutter-apk/*.apk
