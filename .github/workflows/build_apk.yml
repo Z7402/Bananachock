@@ -22,17 +22,11 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Fix gradle wrapper jar
+      - name: Let Flutter regenerate Gradle wrapper
         run: |
-          rm -f android/gradle/wrapper/gradle-wrapper.jar
-          cd android/gradle/wrapper
-          curl -sL -o gradle-wrapper.jar \
-            "https://raw.githubusercontent.com/gradle/gradle/v8.1.1/gradle/wrapper/gradle-wrapper.jar"
-          ls -la gradle-wrapper.jar
-          file gradle-wrapper.jar
-
-      - name: Install dependencies
-        run: flutter pub get
+          rm -rf android/gradle android/gradlew android/gradlew.bat
+          flutter create --platforms android .
+          flutter pub get
 
       - name: Build APK (ARM64 debug)
         run: flutter build apk --debug --target-platform android-arm64
