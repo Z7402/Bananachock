@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dynamic_color/dynamic_color.dart';
-import 'screen_splash.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'screen_main.dart';
 import 'provider_theme.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('zh_CN');
   runApp(
     const ProviderScope(
       child: BananachockApp(),
@@ -15,6 +16,7 @@ void main() {
 }
 
 /// 应用根 Widget
+/// 集成 dynamic_color 实现壁纸色彩自动提取与 Material 3 动态主题适配
 class BananachockApp extends ConsumerWidget {
   const BananachockApp({super.key});
 
@@ -24,19 +26,6 @@ class BananachockApp extends ConsumerWidget {
 
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-        ThemeMode themeMode;
-        switch (appThemeMode) {
-          case AppThemeMode.light:
-            themeMode = ThemeMode.light;
-            break;
-          case AppThemeMode.dark:
-            themeMode = ThemeMode.dark;
-            break;
-          case AppThemeMode.system:
-            themeMode = ThemeMode.system;
-            break;
-        }
-
         return MaterialApp(
           title: 'Bananachock',
           debugShowCheckedModeBanner: false,
@@ -53,8 +42,8 @@ class BananachockApp extends ConsumerWidget {
                 ),
             useMaterial3: true,
           ),
-          themeMode: themeMode,
-          home: const SplashScreen(),
+          themeMode: appThemeMode.flutterThemeMode,
+          home: const MainScreen(),
         );
       },
     );

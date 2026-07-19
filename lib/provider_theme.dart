@@ -4,6 +4,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 enum AppThemeMode { light, dark, system }
 
+extension AppThemeModeX on AppThemeMode {
+  ThemeMode get flutterThemeMode => switch (this) {
+        AppThemeMode.light => ThemeMode.light,
+        AppThemeMode.dark => ThemeMode.dark,
+        AppThemeMode.system => ThemeMode.system,
+      };
+}
+
 class ThemeNotifier extends StateNotifier<AppThemeMode> {
   ThemeNotifier() : super(AppThemeMode.system) {
     _loadFromStorage();
@@ -15,17 +23,6 @@ class ThemeNotifier extends StateNotifier<AppThemeMode> {
     state = mode;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_storageKey, mode.name);
-  }
-
-  ThemeMode get flutterThemeMode {
-    switch (state) {
-      case AppThemeMode.light:
-        return ThemeMode.light;
-      case AppThemeMode.dark:
-        return ThemeMode.dark;
-      case AppThemeMode.system:
-        return ThemeMode.system;
-    }
   }
 
   Future<void> _loadFromStorage() async {

@@ -34,6 +34,7 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () async {
               final prefs = await SharedPreferences.getInstance();
               final tasksJson = prefs.getString('bananachock_tasks') ?? '[]';
+              if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('数据已准备导出（共 ${tasksJson.length} 字节）')));
             }),
           _SettingsItem(icon: Icons.restore, title: '从备份恢复', subtitle: '',

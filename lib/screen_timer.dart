@@ -33,7 +33,7 @@ class TimerScreen extends ConsumerWidget {
               },
               style: ButtonStyle(
                 visualDensity: VisualDensity.compact,
-                shape: MaterialStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               ),
             ),
           ),
@@ -50,7 +50,7 @@ class TimerScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             _ProgressBar(progress: timerState.progress),
             const SizedBox(height: 48),
-            BreathingProgress(progress: timerState.progress),
+            Expanded(flex: 10, child: FittedBox(fit: BoxFit.scaleDown, child: BreathingProgress(progress: timerState.progress))),
             const Spacer(),
             _ControlButtons(
               isRunning: timerState.isRunning,

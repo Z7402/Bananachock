@@ -25,14 +25,15 @@ if (flutterVersionName == null) {
 android {
     namespace "com.example.bananachock"
     compileSdk 36
+    ndkVersion "28.2.13676358"
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     kotlinOptions {
-        jvmTarget = '11'
+        jvmTarget = '1.8'
     }
 
     sourceSets {
@@ -42,12 +43,10 @@ android {
     defaultConfig {
         applicationId "com.example.bananachock"
         minSdkVersion flutter.minSdkVersion
-        targetSdk 36
+        targetSdk 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
-
-    ndkVersion "28.2.13676358"
 
     buildTypes {
         release {
