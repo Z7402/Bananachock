@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'widget_timer_animation.dart';
 import 'widget_breathing_progress.dart';
 import 'provider_timer.dart';
 import 'model_task_record.dart';
