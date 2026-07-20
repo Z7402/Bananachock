@@ -26,16 +26,16 @@ class _TimerBackgroundAnimationState extends ConsumerState<TimerBackgroundAnimat
   late Animation<double> _waveAnim;
   late Animation<double> _sunAnim;
 
-  void _repeatWave() {
-    _waveController.forward(from: _waveController.value).then((_) {
-      if (mounted && widget.isRunning) _repeatWave();
-    });
+  void _onWaveStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed && widget.isRunning) {
+      _waveController.forward(from: 0);
+    }
   }
 
-  void _repeatSun() {
-    _sunController.forward(from: _sunController.value).then((_) {
-      if (mounted && widget.isRunning) _repeatSun();
-    });
+  void _onSunStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed && widget.isRunning) {
+      _sunController.forward(from: 0);
+    }
   }
 
   @override
@@ -43,30 +43,35 @@ class _TimerBackgroundAnimationState extends ConsumerState<TimerBackgroundAnimat
     super.initState();
     _waveController = AnimationController(vsync: this, duration: const Duration(seconds: 4));
     _sunController = AnimationController(vsync: this, duration: const Duration(seconds: 6));
+    _waveController.addStatusListener(_onWaveStatus);
+    _sunController.addStatusListener(_onSunStatus);
     _waveAnim = Tween<double>(begin: 0, end: 2 * pi).animate(CurvedAnimation(parent: _waveController, curve: Curves.easeInOut));
     _sunAnim = Tween<double>(begin: 0, end: 2 * pi).animate(CurvedAnimation(parent: _sunController, curve: Curves.linear));
   }
 
   @override
   void dispose() {
+    _waveController.removeStatusListener(_onWaveStatus);
+    _sunController.removeStatusListener(_onSunStatus);
     _waveController.dispose();
     _sunController.dispose();
     super.dispose();
   }
 
-  bool _prevRunning = false;
-
   @override
   Widget build(BuildContext context) {
-    // 动效控制：仅 isRunning 时播放，停止时停在当前帧，重播时从上次位置续接（无跳变）
+    // 动效控制：仅 isRunning 时播放，停止时停在当前帧，重播时从当前位置续接
     if (widget.isRunning) {
-      if (!_waveController.isAnimating) _repeatWave();
-      if (!_sunController.isAnimating) _repeatSun();
+      if (!_waveController.isAnimating) {
+        _waveController.forward(from: _waveController.value);
+      }
+      if (!_sunController.isAnimating) {
+        _sunController.forward(from: _sunController.value);
+      }
     } else {
       if (_waveController.isAnimating) _waveController.stop();
       if (_sunController.isAnimating) _sunController.stop();
     }
-    _prevRunning = widget.isRunning;
 
     final cs = Theme.of(context).colorScheme;
     final wallpaper = ref.watch(wallpaperProvider);

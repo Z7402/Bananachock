@@ -250,16 +250,16 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
                 ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           if (timerState.mode == TimerMode.pomodoro) ...[
-            _DurationChips(
+            _DurationRow(
               label: '专注',
               currentMinutes: timerState.workSeconds ~/ 60,
               durations: const [5, 15, 25, 45, 60],
               onChanged: (m) => ref.read(timerProvider.notifier).setWorkMinutes(m),
             ),
-            const SizedBox(height: 8),
-            _DurationChips(
+            const SizedBox(height: 6),
+            _DurationRow(
               label: '休息',
               currentMinutes: timerState.breakSeconds ~/ 60,
               durations: const [1, 3, 5, 10, 15],
@@ -272,34 +272,110 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
   }
 }
 
-class _DurationChips extends StatelessWidget {
+class _DurationRow extends StatefulWidget {
   final String label;
   final int currentMinutes;
   final List<int> durations;
   final ValueChanged<int> onChanged;
-  const _DurationChips({required this.label, required this.currentMinutes, required this.durations, required this.onChanged});
+  const _DurationRow({required this.label, required this.currentMinutes, required this.durations, required this.onChanged});
+
+  @override
+  State<_DurationRow> createState() => _DurationRowState();
+}
+
+class _DurationRowState extends State<_DurationRow> {
+  final _customController = TextEditingController();
+  bool _isCustom = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isCustom = !widget.durations.contains(widget.currentMinutes);
+    if (_isCustom) {
+      _customController.text = widget.currentMinutes.toString();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _DurationRow old) {
+    super.didUpdateWidget(old);
+    if (!_isCustom && !widget.durations.contains(widget.currentMinutes)) {
+      _isCustom = true;
+      _customController.text = widget.currentMinutes.toString();
+    }
+    if (_isCustom && widget.durations.contains(widget.currentMinutes)) {
+      _isCustom = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _customController.dispose();
+    super.dispose();
+  }
+
+  void _submitCustom() {
+    final v = int.tryParse(_customController.text);
+    if (v != null && v > 0) {
+      _isCustom = true;
+      widget.onChanged(v);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text('$label ', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
-        ...durations.map((m) {
-          final active = m == currentMinutes;
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 3),
-            child: ActionChip(
-              label: Text('${m}min', style: TextStyle(fontSize: 11, fontWeight: active ? FontWeight.w600 : FontWeight.normal)),
-              onPressed: () => onChanged(m),
-              backgroundColor: active ? cs.primaryContainer : cs.surfaceContainerLow,
-              side: BorderSide.none,
-              visualDensity: VisualDensity.compact,
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(widget.label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: cs.onSurfaceVariant)),
+      const SizedBox(height: 4),
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ...widget.durations.map((m) {
+              final active = m == widget.currentMinutes && !_isCustom;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                child: ActionChip(
+                  label: Text('${m}min', style: TextStyle(fontSize: 11, fontWeight: active ? FontWeight.w600 : FontWeight.normal)),
+                  onPressed: () {
+                    _isCustom = false;
+                    widget.onChanged(m);
+                  },
+                  backgroundColor: active ? cs.primaryContainer : cs.surfaceContainerLow,
+                  side: BorderSide.none,
+                  visualDensity: VisualDensity.compact,
+                ),
+              );
+            }),
+            const SizedBox(width: 8),
+            // 自定义输入
+            SizedBox(
+              width: 60,
+              child: TextField(
+                controller: _customController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  hintText: '自定义',
+                  hintStyle: TextStyle(fontSize: 10, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  filled: true,
+                  fillColor: _isCustom ? cs.primaryContainer.withValues(alpha: 0.3) : cs.surfaceContainerLow,
+                ),
+                style: TextStyle(fontSize: 12, color: cs.onSurface),
+                textAlign: TextAlign.center,
+                onSubmitted: (_) => _submitCustom(),
+                onEditingComplete: _submitCustom,
+              ),
             ),
-          );
-        }),
-      ],
-    );
+            const SizedBox(width: 4),
+            Text('min', style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
+          ],
+        ),
+      ),
+    ]);
   }
 }

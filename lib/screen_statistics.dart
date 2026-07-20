@@ -205,11 +205,13 @@ class _WeeklyView extends StatelessWidget {
           final date = weekStart.add(Duration(days: i));
           final hours = dailyHours[i];
           final tasks = taskList.where((t) => t.date.year == date.year && t.date.month == date.month && t.date.day == date.day).toList();
+          final weekDays = ['周一','周二','周三','周四','周五','周六','周日'];
+          final dayLabel = '${date.month}/${date.day} ${weekDays[date.weekday - 1]}';
           return Card(
             color: cs.surfaceContainerLow,
             margin: const EdgeInsets.only(bottom: 6),
             child: ExpansionTile(
-              title: Text('${DateFormat('MM/dd EEEE', 'zh_CN').format(date)}  ${hours.toStringAsFixed(1)}h'),
+              title: Text('$dayLabel  ${hours.toStringAsFixed(1)}h'),
               children: tasks.map((t) => ListTile(title: Text(t.title), subtitle: Text(t.category), trailing: Text('${t.duration.inMinutes}min'))).toList(),
             ),
           );
@@ -280,11 +282,14 @@ class _DateSelector extends StatelessWidget {
   final ValueChanged<DateTime> onDateChanged;
   const _DateSelector({required this.selectedDate, required this.onDateChanged});
 
+  static const _cnWeekday = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+
   @override
   Widget build(BuildContext context) {
+    final label = '${selectedDate.year}年${selectedDate.month}月${selectedDate.day}日 ${_cnWeekday[selectedDate.weekday]}';
     return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
       IconButton(icon: const Icon(Icons.chevron_left_rounded), onPressed: () => onDateChanged(selectedDate.subtract(const Duration(days: 1)))),
-      Text(DateFormat('yyyy年MM月dd日 EEEE', 'zh_CN').format(selectedDate), style: Theme.of(context).textTheme.titleMedium),
+      Text(label, style: Theme.of(context).textTheme.titleMedium),
       IconButton(icon: const Icon(Icons.chevron_right_rounded), onPressed: () => onDateChanged(selectedDate.add(const Duration(days: 1)))),
     ]);
   }
