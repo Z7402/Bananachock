@@ -95,6 +95,25 @@ class TimerNotifier extends StateNotifier<TimerState> {
     state = state.copyWith(currentTaskName: name);
   }
 
+  /// 强行结束当前专注阶段，直接进入休息
+  void forceFinishFocus() {
+    if (state.mode != TimerMode.pomodoro || state.isBreak || !state.isRunning) return;
+    _timer?.cancel();
+    // 计算已专注时长
+    final focusedSeconds = state.workSeconds - state.remainingSeconds;
+    if (focusedSeconds > 0) {
+      _recordTask(focusedSeconds);
+    }
+    // 切换到休息
+    state = state.copyWith(
+      isRunning: false,
+      remainingSeconds: state.breakSeconds,
+      isBreak: true,
+      completedPomodoros: state.completedPomodoros + 1,
+    );
+    _sessionStart = null;
+  }
+
   /// 结束正向计时并记录任务（用于停止按钮）
   void stopStopwatch() {
     if (state.mode != TimerMode.stopwatch) return;

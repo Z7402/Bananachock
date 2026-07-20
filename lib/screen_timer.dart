@@ -20,6 +20,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
   late Animation<double> _timePulseAnim;
   final _taskNameController = TextEditingController();
 
+  /// 进度平滑插值控制器 — 将 1s 一跳的 progress 插值为连续变化
+  late AnimationController _smoothProgController;
+  double _smoothProgress = 0.0;
+
   @override
   void initState() {
     super.initState();
@@ -30,11 +34,22 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
     _timePulseAnim = Tween<double>(begin: 0.98, end: 1.02).animate(
       CurvedAnimation(parent: _timePulseController, curve: Curves.easeInOut),
     );
+
+    _smoothProgController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _smoothProgController.addListener(() {
+      if (_smoothProgController.isAnimating) {
+        setState(() {});
+      }
+    });
   }
 
   @override
   void dispose() {
     _timePulseController.dispose();
+    _smoothProgController.dispose();
     _taskNameController.dispose();
     super.dispose();
   }
@@ -50,6 +65,17 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
       if (!_timePulseController.isAnimating) _timePulseController.repeat(reverse: true);
     } else {
       if (_timePulseController.isAnimating) _timePulseController.stop();
+    }
+
+    // 进度平滑插值：每秒将 progress 从当前值动画到目标值
+    final rawProgress = timerState.progress;
+    if (_smoothProgController.value != rawProgress) {
+      if (_smoothProgController.isAnimating) {
+        _smoothProgController.stop();
+      }
+      _smoothProgController
+        ..value = _smoothProgress
+        ..animateTo(rawProgress, duration: const Duration(milliseconds: 400), curve: Curves.easeOut);
     }
 
     return Scaffold(
@@ -163,7 +189,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
             Stack(
               alignment: Alignment.center,
               children: [
-                TimerBackgroundAnimation(progress: timerState.progress, isRunning: timerState.isRunning, size: 300),
+                TimerBackgroundAnimation(progress: _smoothProgress, isRunning: timerState.isRunning, size: 300),
                 Transform.scale(
                   scale: timerState.isRunning ? _timePulseAnim.value : 1.0,
                   child: Text(
@@ -236,6 +262,17 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
                     onPressed: () => ref.read(timerProvider.notifier).stopStopwatch(),
                     backgroundColor: cs.errorContainer,
                     child: Icon(Icons.stop_rounded, color: cs.onErrorContainer),
+                  ),
+                )
+              else if (timerState.mode == TimerMode.pomodoro && timerState.isRunning && !timerState.isBreak)
+                // 强制结束专注 → 进入休息
+                SizedBox(
+                  width: 56, height: 56,
+                  child: FloatingActionButton(
+                    heroTag: 'timer_force',
+                    onPressed: () => ref.read(timerProvider.notifier).forceFinishFocus(),
+                    backgroundColor: cs.tertiaryContainer,
+                    child: Icon(Icons.fast_forward_rounded, color: cs.onTertiaryContainer),
                   ),
                 )
               else

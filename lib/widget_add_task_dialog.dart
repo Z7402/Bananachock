@@ -37,12 +37,14 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             Column(children: [
               Text('小时', style: Theme.of(context).textTheme.bodySmall),
-              SizedBox(width: 80, child: NumberPicker(value: _hours, min: 0, max: 23, onChanged: (v) => setState(() => _hours = v))),
+              const SizedBox(height: 4),
+              _CompactPicker(value: _hours, min: 0, max: 23, onChanged: (v) => setState(() => _hours = v)),
             ]),
-            const SizedBox(width: 16),
+            const SizedBox(width: 24),
             Column(children: [
               Text('分钟', style: Theme.of(context).textTheme.bodySmall),
-              SizedBox(width: 80, child: NumberPicker(value: _minutes, min: 0, max: 59, onChanged: (v) => setState(() => _minutes = v))),
+              const SizedBox(height: 4),
+              _CompactPicker(value: _minutes, min: 0, max: 59, onChanged: (v) => setState(() => _minutes = v)),
             ]),
           ]),
         ]),
@@ -59,17 +61,16 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
   }
 }
 
-class NumberPicker extends StatelessWidget {
+class _CompactPicker extends StatelessWidget {
   final int value, min, max;
   final ValueChanged<int> onChanged;
-  const NumberPicker({super.key, required this.value, required this.min, required this.max, required this.onChanged});
-
+  const _CompactPicker({required this.value, required this.min, required this.max, required this.onChanged});
   @override
   Widget build(BuildContext context) {
-    return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      IconButton(icon: const Icon(Icons.remove_circle_outline), onPressed: value > min ? () => onChanged(value - 1) : null, visualDensity: VisualDensity.compact),
-      SizedBox(width: 32, child: Text(value.toString().padLeft(2, '0'), textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium)),
-      IconButton(icon: const Icon(Icons.add_circle_outline), onPressed: value < max ? () => onChanged(value + 1) : null, visualDensity: VisualDensity.compact),
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      IconButton(icon: const Icon(Icons.remove_circle_outline, size: 20), onPressed: value > min ? () => onChanged(value - 1) : null, visualDensity: VisualDensity.compact, padding: EdgeInsets.zero, constraints: const BoxConstraints()),
+      SizedBox(width: 28, child: Text(value.toString().padLeft(2, '0'), textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleSmall)),
+      IconButton(icon: const Icon(Icons.add_circle_outline, size: 20), onPressed: value < max ? () => onChanged(value + 1) : null, visualDensity: VisualDensity.compact, padding: EdgeInsets.zero, constraints: const BoxConstraints()),
     ]);
   }
 }
