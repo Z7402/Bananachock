@@ -26,11 +26,23 @@ class _TimerBackgroundAnimationState extends ConsumerState<TimerBackgroundAnimat
   late Animation<double> _waveAnim;
   late Animation<double> _sunAnim;
 
+  void _repeatWave() {
+    _waveController.forward(from: _waveController.value).then((_) {
+      if (mounted && widget.isRunning) _repeatWave();
+    });
+  }
+
+  void _repeatSun() {
+    _sunController.forward(from: _sunController.value).then((_) {
+      if (mounted && widget.isRunning) _repeatSun();
+    });
+  }
+
   @override
   void initState() {
     super.initState();
-    _waveController = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat();
-    _sunController = AnimationController(vsync: this, duration: const Duration(seconds: 6))..repeat();
+    _waveController = AnimationController(vsync: this, duration: const Duration(seconds: 4));
+    _sunController = AnimationController(vsync: this, duration: const Duration(seconds: 6));
     _waveAnim = Tween<double>(begin: 0, end: 2 * pi).animate(CurvedAnimation(parent: _waveController, curve: Curves.easeInOut));
     _sunAnim = Tween<double>(begin: 0, end: 2 * pi).animate(CurvedAnimation(parent: _sunController, curve: Curves.linear));
   }
@@ -42,20 +54,19 @@ class _TimerBackgroundAnimationState extends ConsumerState<TimerBackgroundAnimat
     super.dispose();
   }
 
+  bool _prevRunning = false;
+
   @override
   Widget build(BuildContext context) {
-    // 动效控制：仅 isRunning 时播放，停止时停在当前帧，重新播放时从上次位置续接（无跳变）
+    // 动效控制：仅 isRunning 时播放，停止时停在当前帧，重播时从上次位置续接（无跳变）
     if (widget.isRunning) {
-      if (!_waveController.isAnimating) {
-        _waveController.repeat(initial: _waveController.value);
-      }
-      if (!_sunController.isAnimating) {
-        _sunController.repeat(initial: _sunController.value);
-      }
+      if (!_waveController.isAnimating) _repeatWave();
+      if (!_sunController.isAnimating) _repeatSun();
     } else {
       if (_waveController.isAnimating) _waveController.stop();
       if (_sunController.isAnimating) _sunController.stop();
     }
+    _prevRunning = widget.isRunning;
 
     final cs = Theme.of(context).colorScheme;
     final wallpaper = ref.watch(wallpaperProvider);
