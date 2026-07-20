@@ -10,8 +10,12 @@ void main() {
       ),
     );
     await tester.pump();
-
     expect(find.text('Bananachock'), findsOneWidget);
     expect(find.text('时间监控与管理'), findsOneWidget);
+
+    // Advance the splash delay and route transition so no timer remains
+    // pending when the widget test is torn down.
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(milliseconds: 600));
   });
 }
