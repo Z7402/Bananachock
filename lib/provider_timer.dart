@@ -1,16 +1,25 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'model_task_record.dart';
+import 'provider_task.dart';
 
 /// 计时器状态 Notifier
 class TimerNotifier extends StateNotifier<TimerState> {
-  TimerNotifier() : super(const TimerState(mode: TimerMode.pomodoro));
-
+  final Ref _ref;
   Timer? _timer;
+  DateTime? _sessionStart;
+
+  TimerNotifier(this._ref) : super(const TimerState(mode: TimerMode.pomodoro));
 
   void start() {
     if (state.isRunning) return;
     _timer?.cancel();
+
+    // 记录会话开始时间（用于任务绑定）
+    if (_sessionStart == null) {
+      _sessionStart = DateTime.now();
+    }
+
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (state.mode == TimerMode.pomodoro) {
         if (state.remainingSeconds <= 0) {
@@ -32,37 +41,112 @@ class TimerNotifier extends StateNotifier<TimerState> {
 
   void reset() {
     _timer?.cancel();
+    _sessionStart = null;
     state = state.copyWith(
       isRunning: false,
       remainingSeconds: state.mode == TimerMode.pomodoro ? state.totalSeconds : 0,
+      isBreak: false,
     );
   }
 
   void switchMode(TimerMode mode) {
     _timer?.cancel();
-    state = TimerState(
-      mode: mode,
-      remainingSeconds: mode == TimerMode.pomodoro ? state.totalSeconds : 0,
-      totalSeconds: state.totalSeconds,
-      completedPomodoros: state.completedPomodoros,
+    _sessionStart = null;
+    if (mode == TimerMode.pomodoro) {
+      state = TimerState(
+        mode: mode,
+        remainingSeconds: state.workSeconds,
+        workSeconds: state.workSeconds,
+        breakSeconds: state.breakSeconds,
+        completedPomodoros: state.completedPomodoros,
+        isBreak: false,
+        currentTaskName: state.currentTaskName,
+      );
+    } else {
+      state = TimerState(
+        mode: mode,
+        remainingSeconds: 0,
+        workSeconds: state.workSeconds,
+        breakSeconds: state.breakSeconds,
+        completedPomodoros: state.completedPomodoros,
+        isBreak: false,
+        currentTaskName: state.currentTaskName,
+      );
+    }
+  }
+
+  void setWorkMinutes(int minutes) {
+    final total = minutes * 60;
+    state = state.copyWith(
+      workSeconds: total,
+      remainingSeconds: (!state.isBreak && state.mode == TimerMode.pomodoro) ? total : state.remainingSeconds,
     );
   }
 
-  void setPomodoroMinutes(int minutes) {
+  void setBreakMinutes(int minutes) {
     final total = minutes * 60;
     state = state.copyWith(
-      totalSeconds: total,
-      remainingSeconds: state.mode == TimerMode.pomodoro ? total : state.remainingSeconds,
+      breakSeconds: total,
+      remainingSeconds: state.isBreak ? total : state.remainingSeconds,
     );
+  }
+
+  void setCurrentTaskName(String name) {
+    state = state.copyWith(currentTaskName: name);
+  }
+
+  /// 结束正向计时并记录任务（用于停止按钮）
+  void stopStopwatch() {
+    if (state.mode != TimerMode.stopwatch) return;
+    _timer?.cancel();
+    final elapsed = state.remainingSeconds;
+    if (elapsed > 0) {
+      _recordTask(elapsed);
+    }
+    _sessionStart = null;
+    state = state.copyWith(isRunning: false, remainingSeconds: 0);
   }
 
   void _onComplete() {
     _timer?.cancel();
-    state = state.copyWith(
-      isRunning: false,
-      remainingSeconds: 0,
-      completedPomodoros: state.completedPomodoros + 1,
+    final wasBreak = state.isBreak;
+
+    if (!wasBreak) {
+      // 专注完成 -> 记录任务
+      _recordTask(state.workSeconds);
+      // 自动进入休息
+      state = state.copyWith(
+        isRunning: false,
+        remainingSeconds: state.breakSeconds,
+        completedPomodoros: state.completedPomodoros + 1,
+        isBreak: true,
+      );
+    } else {
+      // 休息完成 -> 切回专注
+      state = state.copyWith(
+        isRunning: false,
+        remainingSeconds: state.workSeconds,
+        isBreak: false,
+      );
+    }
+    _sessionStart = null;
+  }
+
+  void _recordTask(int durationSeconds) {
+    final title = state.currentTaskName.isNotEmpty
+        ? state.currentTaskName
+        : (state.mode == TimerMode.pomodoro ? '番茄专注' : '正向计时');
+    final now = DateTime.now();
+    final startTime = _sessionStart ?? now.subtract(Duration(seconds: durationSeconds));
+
+    final task = TaskRecord(
+      id: '${now.millisecondsSinceEpoch}_${now.microsecond}',
+      title: title,
+      category: '专注',
+      date: startTime,
+      duration: Duration(seconds: durationSeconds),
     );
+    _ref.read(taskProvider.notifier).addTask(task);
   }
 
   @override
@@ -73,5 +157,5 @@ class TimerNotifier extends StateNotifier<TimerState> {
 }
 
 final timerProvider = StateNotifierProvider<TimerNotifier, TimerState>((ref) {
-  return TimerNotifier();
+  return TimerNotifier(ref);
 });

@@ -18,6 +18,7 @@ class TimerScreen extends ConsumerStatefulWidget {
 class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderStateMixin {
   late AnimationController _timePulseController;
   late Animation<double> _timePulseAnim;
+  final _taskNameController = TextEditingController();
 
   @override
   void initState() {
@@ -25,7 +26,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
     _timePulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
+    ); // 不自动 repeat，由 build 控制
     _timePulseAnim = Tween<double>(begin: 0.98, end: 1.02).animate(
       CurvedAnimation(parent: _timePulseController, curve: Curves.easeInOut),
     );
@@ -34,6 +35,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
   @override
   void dispose() {
     _timePulseController.dispose();
+    _taskNameController.dispose();
     super.dispose();
   }
 
@@ -42,6 +44,13 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
     final timerState = ref.watch(timerProvider);
     final colorScheme = Theme.of(context).colorScheme;
     final quote = ref.watch(quoteProvider);
+
+    // 动效控制：仅在运行时播放时间脉冲动画
+    if (timerState.isRunning) {
+      if (!_timePulseController.isAnimating) _timePulseController.repeat(reverse: true);
+    } else {
+      if (_timePulseController.isAnimating) _timePulseController.stop();
+    }
 
     return Scaffold(
       body: Stack(
@@ -131,6 +140,26 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Spacer(flex: 1),
+            // 阶段标签
+            if (timerState.mode == TimerMode.pomodoro)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: timerState.isBreak ? cs.tertiaryContainer : cs.primaryContainer,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    timerState.isBreak ? '休息中' : '专注中',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: timerState.isBreak ? cs.onTertiaryContainer : cs.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+              ),
             Stack(
               alignment: Alignment.center,
               children: [
@@ -156,6 +185,27 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
       padding: const EdgeInsets.symmetric(horizontal: 40),
       child: Column(
         children: [
+          // 任务名称输入
+          if (!timerState.isRunning)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: SizedBox(
+                width: 240,
+                child: TextField(
+                  controller: _taskNameController,
+                  decoration: InputDecoration(
+                    hintText: timerState.mode == TimerMode.pomodoro ? '本次专注任务名...' : '本次计时任务名...',
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: cs.surfaceContainerLow.withValues(alpha: 0.6),
+                  ),
+                  style: TextStyle(fontSize: 13, color: cs.onSurface),
+                  onChanged: (v) => ref.read(timerProvider.notifier).setCurrentTaskName(v.trim()),
+                ),
+              ),
+            ),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -165,57 +215,91 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
                   heroTag: 'timer_main',
                   onPressed: () {
                     if (timerState.isRunning) { ref.read(timerProvider.notifier).pause(); }
-                    else { ref.read(timerProvider.notifier).start(); }
+                    else if (timerState.mode == TimerMode.stopwatch && timerState.remainingSeconds > 0) {
+                      // 正向计时恢复
+                      ref.read(timerProvider.notifier).start();
+                    } else {
+                      ref.read(timerProvider.notifier).start();
+                    }
                   },
-                  backgroundColor: cs.primary,
+                  backgroundColor: timerState.isRunning ? cs.secondary : cs.primary,
                   child: Icon(timerState.isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded, size: 36, color: cs.onPrimary),
                 ),
               ),
               const SizedBox(width: 32),
-              SizedBox(
-                width: 56, height: 56,
-                child: FloatingActionButton(
-                  heroTag: 'timer_reset',
-                  onPressed: () => ref.read(timerProvider.notifier).reset(),
-                  backgroundColor: cs.surfaceContainerHighest,
-                  child: Icon(Icons.restart_alt_rounded, color: cs.onSurfaceVariant),
+              // 正向计时：停止按钮（记录任务）
+              if (timerState.mode == TimerMode.stopwatch && timerState.remainingSeconds > 0)
+                SizedBox(
+                  width: 56, height: 56,
+                  child: FloatingActionButton(
+                    heroTag: 'timer_stop',
+                    onPressed: () => ref.read(timerProvider.notifier).stopStopwatch(),
+                    backgroundColor: cs.errorContainer,
+                    child: Icon(Icons.stop_rounded, color: cs.onErrorContainer),
+                  ),
+                )
+              else
+                SizedBox(
+                  width: 56, height: 56,
+                  child: FloatingActionButton(
+                    heroTag: 'timer_reset',
+                    onPressed: () => ref.read(timerProvider.notifier).reset(),
+                    backgroundColor: cs.surfaceContainerHighest,
+                    child: Icon(Icons.restart_alt_rounded, color: cs.onSurfaceVariant),
+                  ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 16),
-          if (timerState.mode == TimerMode.pomodoro)
-            _PomodoroChips(currentMinutes: timerState.totalSeconds ~/ 60, onChanged: (m) => ref.read(timerProvider.notifier).setPomodoroMinutes(m)),
+          if (timerState.mode == TimerMode.pomodoro) ...[
+            _DurationChips(
+              label: '专注',
+              currentMinutes: timerState.workSeconds ~/ 60,
+              durations: const [5, 15, 25, 45, 60],
+              onChanged: (m) => ref.read(timerProvider.notifier).setWorkMinutes(m),
+            ),
+            const SizedBox(height: 8),
+            _DurationChips(
+              label: '休息',
+              currentMinutes: timerState.breakSeconds ~/ 60,
+              durations: const [1, 3, 5, 10, 15],
+              onChanged: (m) => ref.read(timerProvider.notifier).setBreakMinutes(m),
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-class _PomodoroChips extends StatelessWidget {
+class _DurationChips extends StatelessWidget {
+  final String label;
   final int currentMinutes;
+  final List<int> durations;
   final ValueChanged<int> onChanged;
-  const _PomodoroChips({required this.currentMinutes, required this.onChanged});
+  const _DurationChips({required this.label, required this.currentMinutes, required this.durations, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    const durations = [5, 15, 25, 45, 60];
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: durations.map((m) {
-        final active = m == currentMinutes;
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 3),
-          child: ActionChip(
-            label: Text('${m}min', style: TextStyle(fontSize: 11, fontWeight: active ? FontWeight.w600 : FontWeight.normal)),
-            onPressed: () => onChanged(m),
-            backgroundColor: active ? cs.primaryContainer : cs.surfaceContainerLow,
-            side: BorderSide.none,
-            visualDensity: VisualDensity.compact,
-          ),
-        );
-      }).toList(),
+      children: [
+        Text('$label ', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+        ...durations.map((m) {
+          final active = m == currentMinutes;
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: ActionChip(
+              label: Text('${m}min', style: TextStyle(fontSize: 11, fontWeight: active ? FontWeight.w600 : FontWeight.normal)),
+              onPressed: () => onChanged(m),
+              backgroundColor: active ? cs.primaryContainer : cs.surfaceContainerLow,
+              side: BorderSide.none,
+              visualDensity: VisualDensity.compact,
+            ),
+          );
+        }),
+      ],
     );
   }
 }

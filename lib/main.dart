@@ -1,12 +1,14 @@
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:dynamic_color/dynamic_color.dart";
+import "package:intl/intl.dart";
 import "screen_splash.dart";
 import "provider_theme.dart";
 import "provider_wallpaper.dart";
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  Intl.defaultLocale = 'zh_CN';
   runApp(const ProviderScope(child: BananachockApp()));
 }
 

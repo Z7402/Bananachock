@@ -61,7 +61,32 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> with Single
         body: TabBarView(
           controller: _tabController,
           children: [
-            _DailyView(date: _selectedDate, todayTasks: todayTasks, categoryMap: categoryMap, taskList: taskList, onDateChanged: (d) => setState(() => _selectedDate = d)),
+            _DailyView(
+              date: _selectedDate,
+              todayTasks: todayTasks,
+              categoryMap: categoryMap,
+              taskList: taskList,
+              onDateChanged: (d) => setState(() => _selectedDate = d),
+              onDeleteTask: (id) {
+                final task = taskList.where((t) => t.id == id).firstOrNull;
+                if (task != null) {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('删除任务'),
+                      content: Text('确定删除「${task.title}」？'),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+                        FilledButton(onPressed: () {
+                          ref.read(taskProvider.notifier).deleteTask(id);
+                          Navigator.pop(ctx);
+                        }, child: const Text('删除')),
+                      ],
+                    ),
+                  );
+                }
+              },
+            ),
             _WeeklyView(taskList: taskList),
             _MonthlyView(taskList: taskList),
           ],
@@ -92,7 +117,8 @@ class _DailyView extends StatelessWidget {
   final Map<String, Duration> categoryMap;
   final List<TaskRecord> taskList;
   final ValueChanged<DateTime> onDateChanged;
-  const _DailyView({required this.date, required this.todayTasks, required this.categoryMap, required this.taskList, required this.onDateChanged});
+  final ValueChanged<String>? onDeleteTask;
+  const _DailyView({required this.date, required this.todayTasks, required this.categoryMap, required this.taskList, required this.onDateChanged, this.onDeleteTask});
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +160,7 @@ class _DailyView extends StatelessWidget {
         if (todayTasks.isEmpty)
           Padding(padding: const EdgeInsets.symmetric(vertical: 32), child: Center(child: Text('暂无记录', style: TextStyle(color: cs.onSurfaceVariant))))
         else
-          ...todayTasks.map((task) => _TaskCard(task: task)),
+          ...todayTasks.map((task) => _TaskCard(task: task, onDelete: () => onDeleteTask?.call(task.id))),
       ]),
     );
   }
@@ -329,7 +355,8 @@ class _WeeklyChart extends StatelessWidget {
 
 class _TaskCard extends StatelessWidget {
   final TaskRecord task;
-  const _TaskCard({required this.task});
+  final VoidCallback? onDelete;
+  const _TaskCard({required this.task, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -339,7 +366,20 @@ class _TaskCard extends StatelessWidget {
     final durationStr = hours > 0 ? '${hours}h ${minutes}min' : '$minutes min';
     return Card(elevation: 0, color: cs.surfaceContainerLow, margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(title: Text(task.title), subtitle: Text(task.category), trailing: Text(durationStr, style: TextStyle(color: cs.primary, fontWeight: FontWeight.w500))),
+      child: ListTile(
+        title: Text(task.title),
+        subtitle: Text(task.category),
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(durationStr, style: TextStyle(color: cs.primary, fontWeight: FontWeight.w500)),
+          const SizedBox(width: 4),
+          IconButton(
+            icon: Icon(Icons.delete_outline, size: 18, color: cs.error.withValues(alpha: 0.7)),
+            onPressed: onDelete,
+            visualDensity: VisualDensity.compact,
+            tooltip: '删除',
+          ),
+        ]),
+      ),
     );
   }
 }

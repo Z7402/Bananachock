@@ -44,6 +44,19 @@ class _TimerBackgroundAnimationState extends ConsumerState<TimerBackgroundAnimat
 
   @override
   Widget build(BuildContext context) {
+    // 动效控制：仅 isRunning 时播放，停止时停在当前帧，重新播放时从上次位置续接（无跳变）
+    if (widget.isRunning) {
+      if (!_waveController.isAnimating) {
+        _waveController.repeat(initial: _waveController.value);
+      }
+      if (!_sunController.isAnimating) {
+        _sunController.repeat(initial: _sunController.value);
+      }
+    } else {
+      if (_waveController.isAnimating) _waveController.stop();
+      if (_sunController.isAnimating) _sunController.stop();
+    }
+
     final cs = Theme.of(context).colorScheme;
     final wallpaper = ref.watch(wallpaperProvider);
     final skyTop = wallpaper.hasWallpaper ? wallpaper.mutedAccent : cs.primaryContainer;

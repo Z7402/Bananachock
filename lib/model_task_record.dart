@@ -43,30 +43,45 @@ class TimerState {
   final TimerMode mode;
   final bool isRunning;
   final int remainingSeconds;
-  final int totalSeconds;
+  final int workSeconds;
+  final int breakSeconds;
   final int completedPomodoros;
+  final bool isBreak;
+  final String currentTaskName;
 
   const TimerState({
     required this.mode,
     this.isRunning = false,
     this.remainingSeconds = 0,
-    this.totalSeconds = 25 * 60,
+    this.workSeconds = 25 * 60,
+    this.breakSeconds = 5 * 60,
     this.completedPomodoros = 0,
+    this.isBreak = false,
+    this.currentTaskName = '',
   });
+
+  /// 当前阶段总时长（休息时用 breakSeconds，否则用 workSeconds）
+  int get totalSeconds => isBreak ? breakSeconds : workSeconds;
 
   TimerState copyWith({
     TimerMode? mode,
     bool? isRunning,
     int? remainingSeconds,
-    int? totalSeconds,
+    int? workSeconds,
+    int? breakSeconds,
     int? completedPomodoros,
+    bool? isBreak,
+    String? currentTaskName,
   }) {
     return TimerState(
       mode: mode ?? this.mode,
       isRunning: isRunning ?? this.isRunning,
       remainingSeconds: remainingSeconds ?? this.remainingSeconds,
-      totalSeconds: totalSeconds ?? this.totalSeconds,
+      workSeconds: workSeconds ?? this.workSeconds,
+      breakSeconds: breakSeconds ?? this.breakSeconds,
       completedPomodoros: completedPomodoros ?? this.completedPomodoros,
+      isBreak: isBreak ?? this.isBreak,
+      currentTaskName: currentTaskName ?? this.currentTaskName,
     );
   }
 
