@@ -101,44 +101,58 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       ),
       body: Container(
         color: colorScheme.surface,
-        padding: const EdgeInsets.symmetric(horizontal: 32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Spacer(flex: 2),
-            ScaleTransition(
-              scale: _timePulseAnim,
-              child: _TimeDisplay(timeString: timerState.formattedTime),
-            ),
-            const SizedBox(height: 16),
-            _ProgressBar(progress: timerState.progress),
-            const SizedBox(height: 48),
-            BreathingProgress(
-              progress: timerState.progress,
-              isRunning: timerState.isRunning,
-            ),
-            const Spacer(),
-            _ControlButtons(
-              isRunning: timerState.isRunning,
-              onStartPause: () {
-                if (timerState.isRunning) {
-                  ref.read(timerProvider.notifier).pause();
-                } else {
-                  ref.read(timerProvider.notifier).start();
-                }
-              },
-              onReset: () => ref.read(timerProvider.notifier).reset(),
-            ),
-            const SizedBox(height: 24),
-            if (timerState.mode == TimerMode.pomodoro)
-              _PomodoroDurationSelector(
-                currentMinutes: timerState.totalSeconds ~/ 60,
-                onChanged: (minutes) => ref
-                    .read(timerProvider.notifier)
-                    .setPomodoroMinutes(minutes),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxHeight < 600;
+            final breathingSize = compact ? 140.0 : 200.0;
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ScaleTransition(
+                      scale: _timePulseAnim,
+                      child: _TimeDisplay(
+                        timeString: timerState.formattedTime,
+                        fontSize: compact ? 64 : 80,
+                      ),
+                    ),
+                    SizedBox(height: compact ? 8 : 16),
+                    _ProgressBar(progress: timerState.progress),
+                    SizedBox(height: compact ? 24 : 48),
+                    BreathingProgress(
+                      size: breathingSize,
+                      progress: timerState.progress,
+                      isRunning: timerState.isRunning,
+                    ),
+                    SizedBox(height: compact ? 16 : 32),
+                    _ControlButtons(
+                      isRunning: timerState.isRunning,
+                      onStartPause: () {
+                        if (timerState.isRunning) {
+                          ref.read(timerProvider.notifier).pause();
+                        } else {
+                          ref.read(timerProvider.notifier).start();
+                        }
+                      },
+                      onReset: () => ref.read(timerProvider.notifier).reset(),
+                    ),
+                    SizedBox(height: compact ? 12 : 24),
+                    if (timerState.mode == TimerMode.pomodoro)
+                      _PomodoroDurationSelector(
+                        currentMinutes: timerState.totalSeconds ~/ 60,
+                        onChanged: (minutes) => ref
+                            .read(timerProvider.notifier)
+                            .setPomodoroMinutes(minutes),
+                      ),
+                  ],
+                ),
               ),
-            const Spacer(flex: 2),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -147,14 +161,15 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
 class _TimeDisplay extends StatelessWidget {
   final String timeString;
-  const _TimeDisplay({required this.timeString});
+  final double fontSize;
+  const _TimeDisplay({required this.timeString, this.fontSize = 80});
 
   @override
   Widget build(BuildContext context) {
     return Text(
       timeString,
       style: Theme.of(context).textTheme.displayLarge?.copyWith(
-        fontSize: 80,
+        fontSize: fontSize,
         fontWeight: FontWeight.w300,
         letterSpacing: 4,
         color: Theme.of(context).colorScheme.onSurface,
