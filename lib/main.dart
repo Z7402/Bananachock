@@ -36,7 +36,7 @@ class BananachockApp extends ConsumerWidget {
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
             colorScheme: lightDynamic != null
-                ? lightDynamic.harmonized(seedColor)
+                ? lightDynamic.withSeedColor(seedColor)
                 : ColorScheme.fromSeed(
                     seedColor: seedColor,
                     brightness: Brightness.light,
@@ -51,7 +51,7 @@ class BananachockApp extends ConsumerWidget {
           ),
           darkTheme: ThemeData(
             colorScheme: darkDynamic != null
-                ? darkDynamic.harmonized(seedColor)
+                ? darkDynamic.withSeedColor(seedColor)
                 : ColorScheme.fromSeed(
                     seedColor: seedColor,
                     brightness: Brightness.dark,
@@ -78,7 +78,7 @@ class BananachockApp extends ConsumerWidget {
 
 extension on ColorScheme {
   /// 将当前色彩方案的主色替换为 seedColor，其他色取两者调和
-  ColorScheme harmonized(Color seedColor) {
+  ColorScheme withSeedColor(Color seedColor) {
     return ColorScheme.fromSeed(
       seedColor: seedColor,
       brightness: brightness,
