@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screen_main.dart';
-import 'provider_wallpaper.dart';
 
 /// 启动加载页面 —— 带呼吸动画 + 动态太阳波浪
 /// 显示 2 秒后自动跳转到主屏幕（MainScreen）
@@ -91,13 +89,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         gradient: RadialGradient(
                           colors: [
                             colorScheme.primary,
-                            colorScheme.primary.withOpacity(0.4),
+                            colorScheme.primary.withValues(alpha: 0.4),
                           ],
                           stops: const [0.3, 1.0],
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: colorScheme.primary.withOpacity(0.35 * _pulseAnim.value),
+                            color: colorScheme.primary.withValues(alpha: 0.35 * _pulseAnim.value),
                             blurRadius: 32 * _pulseAnim.value,
                             spreadRadius: 8 * _pulseAnim.value,
                           ),
@@ -149,7 +147,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   'by schwarz and his assistant deepseek-v4-pro',
                   style: TextStyle(
                     fontSize: 12,
-                    color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                   ),
                 ),
               ],

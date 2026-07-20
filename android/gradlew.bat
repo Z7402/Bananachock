@@ -22,10 +22,9 @@ if exist "%JAVA_EXE%" goto execute
 echo ERROR: JAVA_HOME is set to an invalid directory: %JAVA_HOME%
 goto fail
 :execute
-set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
+set CLASSPATH=%GRADLE_USER_HOME%\wrapper\gradle-wrapper.jar
 set GRADLE_OPTS=%GRADLE_OPTS% -Dorg.gradle.appname="%APP_BASE_NAME%"
 "%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*
-exit /b %ERRORLEVEL%
 :end
 :omega
 :fail

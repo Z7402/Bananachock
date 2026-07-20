@@ -1,23 +1,40 @@
-# Flutter
+# Dart / Flutter
 .dart_tool/
 .packages
+.pub/
 build/
 .flutter-plugins
 .flutter-plugins-dependencies
 
-# IDE
+# Android / Gradle
+android/.gradle/
+android/local.properties
+android/key.properties
+*.jks
+*.keystore
+*.p12
+
+# iOS / Xcode
+ios/Flutter/ephemeral/
+ios/Pods/
+ios/.symlinks/
+**/DerivedData/
+
+# IDE / OS
 .idea/
 .vscode/
 *.iml
-.androidide/
-
-# OS
 .DS_Store
 Thumbs.db
 
-# Logs
+# Generated logs and local backups
 *.log
-
-# Generated
-*.g.dart
-*.freezed.dart
+.backup/
+objects/
+objects (1)/
+objects (2)/
+objects (3)/
+objects (4)/
+objects (5)/
+*.dart.txt
+*.dart (1).txt

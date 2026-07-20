@@ -1,50 +1,38 @@
-import "dart:convert";
-import "dart:typed_data";
-import "package:flutter/material.dart";
-import "package:flutter_riverpod/flutter_riverpod.dart";
-import "package:shared_preferences/shared_preferences.dart";
-import "package:image_picker/image_picker.dart";
-import "package:palette_generator/palette_generator.dart";
-import "dart:io";
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:palette_generator/palette_generator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class WallpaperNotifier extends StateNotifier<WallpaperState> {
   WallpaperNotifier() : super(const WallpaperState()) {
     _loadFromStorage();
   }
 
-  static const _wallpaperImageKey = "bananachock_wallpaper_image";
+  static const _wallpaperImageKey = 'bananachock_wallpaper_image';
 
-  Future<bool> pickWallpaper() async {
-    final picker = ImagePicker();
-    final xFile = await picker.pickImage(
+  Future<void> pickWallpaper() async {
+    final xFile = await ImagePicker().pickImage(
       source: ImageSource.gallery,
       maxWidth: 2048,
-      imageQuality: 85,
     );
-    if (xFile == null) return false;
+    if (xFile == null) return;
 
-    final file = File(xFile.path);
-    final bytes = await file.readAsBytes();
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_wallpaperImageKey, base64.encode(bytes));
-
-    final imageProvider = MemoryImage(bytes);
-    final palette = await PaletteGenerator.fromImageProvider(imageProvider);
-    final dominant = palette.dominantColor?.color ?? Colors.amber;
-    final vibrant = palette.vibrantColor?.color;
-    final muted = palette.mutedColor?.color;
-    final lightMuted = palette.lightMutedColor?.color;
-
+    final bytes = await xFile.readAsBytes();
+    final palette = await PaletteGenerator.fromImageProvider(
+      MemoryImage(bytes),
+    );
     state = WallpaperState(
-      imagePath: xFile.path,
       imageBytes: bytes,
-      dominantColor: dominant,
-      vibrantColor: vibrant,
-      mutedColor: muted,
-      lightMutedColor: lightMuted,
+      dominantColor: palette.dominantColor?.color ?? Colors.amber,
+      vibrantColor: palette.vibrantColor?.color,
+      mutedColor: palette.mutedColor?.color,
+      lightMutedColor: palette.lightMutedColor?.color,
     );
-    return true;
+    await _saveToStorage();
   }
 
   Future<void> removeWallpaper() async {
@@ -55,36 +43,37 @@ class WallpaperNotifier extends StateNotifier<WallpaperState> {
 
   Future<void> _loadFromStorage() async {
     final prefs = await SharedPreferences.getInstance();
-    final base64Str = prefs.getString(_wallpaperImageKey);
-    if (base64Str != null) {
-      try {
-        final bytes = base64.decode(base64Str);
-        final imageProvider = MemoryImage(bytes);
-        final palette = await PaletteGenerator.fromImageProvider(imageProvider);
-        state = WallpaperState(
-          imageBytes: bytes,
-          dominantColor: palette.dominantColor?.color ?? Colors.amber,
-          vibrantColor: palette.vibrantColor?.color,
-          mutedColor: palette.mutedColor?.color,
-          lightMutedColor: palette.lightMutedColor?.color,
-        );
-      } catch (_) {
-        state = const WallpaperState();
-      }
+    final encoded = prefs.getString(_wallpaperImageKey);
+    if (encoded == null) return;
+
+    try {
+      final bytes = base64Decode(encoded);
+      final palette = await PaletteGenerator.fromImageProvider(
+        MemoryImage(bytes),
+      );
+      state = WallpaperState(
+        imageBytes: bytes,
+        dominantColor: palette.dominantColor?.color ?? Colors.amber,
+        vibrantColor: palette.vibrantColor?.color,
+        mutedColor: palette.mutedColor?.color,
+        lightMutedColor: palette.lightMutedColor?.color,
+      );
+    } on FormatException {
+      await prefs.remove(_wallpaperImageKey);
+      state = const WallpaperState();
     }
+  }
+
+  Future<void> _saveToStorage() async {
+    final bytes = state.imageBytes;
+    if (bytes == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_wallpaperImageKey, base64Encode(bytes));
   }
 }
 
 class WallpaperState {
-  final String? imagePath;
-  final Uint8List? imageBytes;
-  final Color dominantColor;
-  final Color? vibrantColor;
-  final Color? mutedColor;
-  final Color? lightMutedColor;
-
   const WallpaperState({
-    this.imagePath,
     this.imageBytes,
     this.dominantColor = Colors.amber,
     this.vibrantColor,
@@ -92,11 +81,19 @@ class WallpaperState {
     this.lightMutedColor,
   });
 
+  final Uint8List? imageBytes;
+  final Color dominantColor;
+  final Color? vibrantColor;
+  final Color? mutedColor;
+  final Color? lightMutedColor;
+
   bool get hasWallpaper => imageBytes != null;
   Color get primaryAccent => vibrantColor ?? dominantColor;
-  Color get mutedAccent => mutedColor ?? primaryAccent.withValues(alpha: 0.6);
+  Color get mutedAccent =>
+      mutedColor ?? primaryAccent.withValues(alpha: 0.6);
 }
 
-final wallpaperProvider = StateNotifierProvider<WallpaperNotifier, WallpaperState>((ref) {
+final wallpaperProvider =
+    StateNotifierProvider<WallpaperNotifier, WallpaperState>((ref) {
   return WallpaperNotifier();
 });

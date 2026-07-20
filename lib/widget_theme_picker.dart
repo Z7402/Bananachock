@@ -11,14 +11,12 @@ class ThemePickerDialog extends StatelessWidget {
     return SimpleDialog(
       title: const Text('选择主题模式'),
       children: [
-        RadioGroup<AppThemeMode>(groupValue: currentMode, onChanged: (mode) {
-          if (mode == null) return;
-          onSelected(mode); Navigator.pop(context);
-        }, child: const Column(mainAxisSize: MainAxisSize.min, children: [
-          RadioListTile<AppThemeMode>(title: Text('浅色'), subtitle: Text('始终使用浅色主题'), value: AppThemeMode.light),
-          RadioListTile<AppThemeMode>(title: Text('深色'), subtitle: Text('始终使用深色主题'), value: AppThemeMode.dark),
-          RadioListTile<AppThemeMode>(title: Text('跟随系统'), subtitle: Text('根据系统设置自动切换'), value: AppThemeMode.system),
-        ])),
+        RadioListTile<AppThemeMode>(title: const Text('浅色'), subtitle: const Text('始终使用浅色主题'),
+          value: AppThemeMode.light, groupValue: currentMode, onChanged: (v) { onSelected(v!); Navigator.pop(context); }),
+        RadioListTile<AppThemeMode>(title: const Text('深色'), subtitle: const Text('始终使用深色主题'),
+          value: AppThemeMode.dark, groupValue: currentMode, onChanged: (v) { onSelected(v!); Navigator.pop(context); }),
+        RadioListTile<AppThemeMode>(title: const Text('跟随系统'), subtitle: const Text('根据系统设置自动切换'),
+          value: AppThemeMode.system, groupValue: currentMode, onChanged: (v) { onSelected(v!); Navigator.pop(context); }),
       ],
     );
   }

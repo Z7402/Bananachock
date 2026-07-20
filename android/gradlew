@@ -31,4 +31,4 @@ JVM_OPTS=()
 GRADLE_OPTS=()
 if [ -n "$GRADLE_USER_HOME" ]; then GRADLE_USER_HOME_DIR="$GRADLE_USER_HOME"
 else GRADLE_USER_HOME_DIR="$HOME/.gradle"; fi
-exec "$JAVACMD" $JVM_OPTS $GRADLE_OPTS -classpath "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" -Dorg.gradle.appname="$APP_BASE_NAME" org.gradle.wrapper.GradleWrapperMain "$@"
+exec "$JAVACMD" $JVM_OPTS $GRADLE_OPTS -classpath "$GRADLE_USER_HOME_DIR/wrapper/gradle-wrapper.jar" -Dorg.gradle.appname="$APP_BASE_NAME" org.gradle.wrapper.GradleWrapperMain "$@"
