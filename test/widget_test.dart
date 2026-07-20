@@ -1,8 +1,12 @@
 import 'package:bananachock/main.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() {
+  setUpAll(() async {
+    await initializeDateFormatting('zh_CN');
+  });
   testWidgets('App should show the splash screen', (WidgetTester tester) async {
     await tester.pumpWidget(
       const ProviderScope(
