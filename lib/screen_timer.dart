@@ -319,6 +319,7 @@ class _DurationRowState extends State<_DurationRow> {
     if (v != null && v > 0) {
       _isCustom = true;
       widget.onChanged(v);
+      setState(() {});
     }
   }
 
