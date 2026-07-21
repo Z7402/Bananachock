@@ -44,15 +44,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
     );
-    // 监听休息状态切换，自动退出沉浸
-    ref.listen<TimerState>(timerProvider, (previous, next) {
-      if (previous != null &&
-          !previous.isBreak &&
-          next.isBreak &&
-          _immersiveFocus) {
-        _setImmersive(false);
-      }
-    });
   }
 
   @override
@@ -94,6 +85,17 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     final timerState = ref.watch(timerProvider);
     final cs = Theme.of(context).colorScheme;
     final quote = ref.watch(quoteProvider);
+
+    // 监听休息状态切换，自动退出沉浸
+    ref.listen<TimerState>(timerProvider, (previous, next) {
+      if (previous != null &&
+          !previous.isBreak &&
+          next.isBreak &&
+          _immersiveFocus) {
+        _setImmersive(false);
+      }
+    });
+
     if (timerState.isRunning && !_timePulseController.isAnimating) {
       _timePulseController.repeat(reverse: true);
     } else if (!timerState.isRunning && _timePulseController.isAnimating) {
