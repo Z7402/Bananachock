@@ -69,7 +69,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     widget.onImmersiveChanged?.call(value);
     if (value) {
       await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-      await SystemChrome.setSystemUIOverlayStyle(
+      SystemChrome.setSystemUIOverlayStyle(
         const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
           systemNavigationBarColor: Colors.transparent,

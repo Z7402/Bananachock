@@ -34,7 +34,7 @@ class BananachockApp extends ConsumerWidget {
                 ? ColorScheme.fromSeed(seedColor: seedColor, brightness: Brightness.light)
                 : ColorScheme.fromSeed(seedColor: seedColor, brightness: Brightness.light),
             useMaterial3: true,
-            cardTheme: CardTheme(
+            cardTheme: CardThemeData(
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
@@ -44,7 +44,7 @@ class BananachockApp extends ConsumerWidget {
                 ? ColorScheme.fromSeed(seedColor: seedColor, brightness: Brightness.dark)
                 : ColorScheme.fromSeed(seedColor: seedColor, brightness: Brightness.dark),
             useMaterial3: true,
-            cardTheme: CardTheme(
+            cardTheme: CardThemeData(
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
