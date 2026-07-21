@@ -13,48 +13,60 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-
-  static const List<Widget> _screens = [
-    TimerScreen(),
-    StatisticsScreen(),
-    SettingsScreen(),
-  ];
+  bool _timerImmersive = false;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final screens = [
+      TimerScreen(
+        onImmersiveChanged: (value) {
+          if (_timerImmersive != value && mounted) {
+            setState(() => _timerImmersive = value);
+          }
+        },
+      ),
+      const StatisticsScreen(),
+      const SettingsScreen(),
+    ];
 
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
-        children: _screens,
+        children: screens,
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (int index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        backgroundColor: colorScheme.surface,
-        indicatorColor: colorScheme.secondaryContainer,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.timer_outlined),
-            selectedIcon: Icon(Icons.timer),
-            label: '计时',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.assessment_outlined),
-            selectedIcon: Icon(Icons.assessment),
-            label: '统计',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: '设置',
-          ),
-        ],
+      bottomNavigationBar: AnimatedSize(
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeInOutCubic,
+        child: _timerImmersive && _selectedIndex == 0
+            ? const SizedBox.shrink()
+            : NavigationBar(
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: (int index) {
+                  setState(() {
+                    _selectedIndex = index;
+                  });
+                },
+                backgroundColor: colorScheme.surface,
+                indicatorColor: colorScheme.secondaryContainer,
+                destinations: const [
+                  NavigationDestination(
+                    icon: Icon(Icons.timer_outlined),
+                    selectedIcon: Icon(Icons.timer),
+                    label: '计时',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.assessment_outlined),
+                    selectedIcon: Icon(Icons.assessment),
+                    label: '统计',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.settings_outlined),
+                    selectedIcon: Icon(Icons.settings),
+                    label: '设置',
+                  ),
+                ],
+              ),
       ),
     );
   }

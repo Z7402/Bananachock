@@ -119,42 +119,139 @@ class _SunWavePainter extends CustomPainter {
     final skyPath = Path()..addRRect(skyRrect);
     canvas.drawPath(skyPath, skyPaint);
 
-    // ─── 太阳：progress 驱动，从左下升起 → 右上降落 ───
-    // 水平：左边缘 → 右边缘
-    final sunX = cx - 120 + 240 * progress;
-    // 垂直：弧形运动（先升后降）
-    final arcHeight = 160.0;
-    final sunY = cy + 50 - arcHeight * sin(pi * progress);
-    // 太阳大小：在最高点（progress≈0.5）最大
-    final sizeFactor = sin(pi * progress);
-    final sunRadius = 22 + 14 * sizeFactor;
+    final seaLevel = h * 0.62;
+    final phase = waveOffset;
 
-    // 光晕
-    final glowRadius = sunRadius * (2.4 - 0.4 * sizeFactor);
-    final glowPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          sunColor.withValues(alpha: 0.35),
-          sunColor.withValues(alpha: 0),
-        ],
-      ).createShader(
-        Rect.fromCircle(center: Offset(sunX, sunY), radius: glowRadius),
+    // ─── 远景海浪：先绘制在太阳背后，建立第一层景深 ───
+    final distantSea = Path()..moveTo(0, seaLevel - h * 0.025);
+    for (double x = 0; x <= w; x += 2) {
+      final nx = x / w;
+      distantSea.lineTo(
+        x,
+        seaLevel -
+            h * 0.025 +
+            sin(nx * 4 * pi + phase) * h * 0.012 +
+            sin(nx * 8 * pi + phase * 2) * h * 0.005,
       );
-    canvas.drawCircle(Offset(sunX, sunY), glowRadius, glowPaint);
+    }
+    distantSea
+      ..lineTo(w, h)
+      ..lineTo(0, h)
+      ..close();
+    canvas.save();
+    canvas.clipPath(skyPath);
+    canvas.drawPath(
+      distantSea,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            sunColor.withOpacity(0.16),
+            skyBottom.withOpacity(0.32),
+          ],
+        ).createShader(Rect.fromLTWH(0, seaLevel - 20, w, h - seaLevel + 20)),
+    );
 
-    // 太阳本体
+    // ─── 太阳：按画布比例沿弧线移动 ───
+    final safeProgress = progress.clamp(0.0, 1.0).toDouble();
+    final sizeFactor = sin(pi * safeProgress);
+    final sunX = w * (0.12 + 0.76 * safeProgress);
+    final sunY = seaLevel + h * 0.06 - h * 0.48 * sizeFactor;
+    final sunRadius = w * (0.065 + 0.035 * sizeFactor);
+    final sunCenter = Offset(sunX, sunY);
+
+    // 宽幅环境光束，越接近天空中央越明显。
+    final beamPath = Path()
+      ..moveTo(sunX - sunRadius * 0.5, sunY)
+      ..lineTo(sunX - w * 0.28, seaLevel)
+      ..lineTo(sunX + w * 0.28, seaLevel)
+      ..lineTo(sunX + sunRadius * 0.5, sunY)
+      ..close();
+    canvas.drawPath(
+      beamPath,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            sunColor.withOpacity(0.02),
+            sunColor.withOpacity(0.12 + 0.08 * sizeFactor),
+            sunColor.withOpacity(0),
+          ],
+        ).createShader(Rect.fromLTRB(0, sunY, w, seaLevel)),
+    );
+
+    // 三层柔光：环境晕、暖色晕、太阳边缘高光。
+    for (final layer in const [3.8, 2.5, 1.55]) {
+      final radius = sunRadius * layer;
+      final alpha = layer == 3.8
+          ? 0.10
+          : layer == 2.5
+              ? 0.18
+              : 0.28;
+      canvas.drawCircle(
+        sunCenter,
+        radius,
+        Paint()
+          ..shader = RadialGradient(
+            colors: [
+              sunColor.withOpacity(alpha * (0.7 + sizeFactor * 0.3)),
+              sunColor.withOpacity(0),
+            ],
+          ).createShader(Rect.fromCircle(center: sunCenter, radius: radius)),
+      );
+    }
+
     final sunBodyPaint = Paint()
       ..shader = RadialGradient(
-        colors: [sunColor, sunColor.withValues(alpha: 0.5)],
-        stops: const [0.3, 1.0],
-      ).createShader(
-        Rect.fromCircle(center: Offset(sunX, sunY), radius: sunRadius),
-      );
-    canvas.drawCircle(Offset(sunX, sunY), sunRadius, sunBodyPaint);
+        center: const Alignment(-0.28, -0.32),
+        colors: [
+          Colors.white.withOpacity(0.92),
+          sunColor,
+          sunColor.withOpacity(0.64),
+        ],
+        stops: const [0, 0.38, 1],
+      ).createShader(Rect.fromCircle(center: sunCenter, radius: sunRadius));
+    canvas.drawCircle(sunCenter, sunRadius, sunBodyPaint);
 
-    // ─── 波浪 ───
-    final seaLevel = cy + 40;
-    final amplitude = 12.0 + 4 * progress;
+    // 海面碎金反射，会被后续中/前景海浪自然切割遮挡。
+    final reflectionTop = max(sunY + sunRadius * 0.7, seaLevel - 8);
+    final reflectionPath = Path()..moveTo(sunX, reflectionTop);
+    const reflectionSegments = 14;
+    for (var i = 0; i <= reflectionSegments; i++) {
+      final t = i / reflectionSegments;
+      final y = reflectionTop + (h - reflectionTop) * t;
+      final halfWidth = w *
+          (0.018 + t * 0.13) *
+          (0.72 + 0.28 * sin(phase * 2 + i * 1.7).abs());
+      reflectionPath.lineTo(sunX + halfWidth, y);
+    }
+    for (var i = reflectionSegments; i >= 0; i--) {
+      final t = i / reflectionSegments;
+      final y = reflectionTop + (h - reflectionTop) * t;
+      final halfWidth = w *
+          (0.018 + t * 0.13) *
+          (0.72 + 0.28 * sin(phase * 2 + i * 1.7).abs());
+      reflectionPath.lineTo(sunX - halfWidth, y);
+    }
+    reflectionPath.close();
+    canvas.drawPath(
+      reflectionPath,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            sunColor.withOpacity(0.30),
+            sunColor.withOpacity(0.02),
+          ],
+        ).createShader(Rect.fromLTRB(0, reflectionTop, w, h)),
+    );
+    canvas.restore();
+
+    // ─── 中景与前景波浪：绘制在太阳前方，实现出海/入海遮挡 ───
+    final amplitude = h * (0.035 + 0.012 * safeProgress);
 
     // 主波浪
     final seaPath = Path()..moveTo(0, seaLevel);
@@ -179,8 +276,8 @@ class _SunWavePainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          sunColor.withValues(alpha: 0.45),
-          sunColor.withValues(alpha: 0.08),
+          sunColor.withOpacity(0.45),
+          sunColor.withOpacity(0.08),
         ],
       ).createShader(Rect.fromLTWH(
         0,
@@ -210,8 +307,8 @@ class _SunWavePainter extends CustomPainter {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              sunColor.withValues(alpha: 0.3),
-              sunColor.withValues(alpha: 0.02),
+              sunColor.withOpacity(0.3),
+              sunColor.withOpacity(0.02),
             ],
           ).createShader(Rect.fromLTWH(
             0,
@@ -226,7 +323,7 @@ class _SunWavePainter extends CustomPainter {
       Offset(cx, cy - 10),
       w * 0.42,
       Paint()
-        ..color = Colors.white.withValues(alpha: 0.15)
+        ..color = Colors.white.withOpacity(0.15)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3,
     );
@@ -241,7 +338,7 @@ class _SunWavePainter extends CustomPainter {
           ..style = PaintingStyle.stroke
           ..strokeWidth = 3
           ..strokeCap = StrokeCap.round
-          ..color = sunColor.withValues(alpha: 0.8),
+          ..color = sunColor.withOpacity(0.8),
       );
     }
 
@@ -249,7 +346,7 @@ class _SunWavePainter extends CustomPainter {
     canvas.drawPath(
       skyPath,
       Paint()
-        ..color = Colors.white.withValues(alpha: 0.12)
+        ..color = Colors.white.withOpacity(0.12)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5,
     );
