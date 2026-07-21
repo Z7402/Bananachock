@@ -31,8 +31,13 @@ class TaskNotifier extends StateNotifier<List<TaskRecord>> {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString(_storageKey);
     if (jsonString != null) {
-      final List<dynamic> jsonList = json.decode(jsonString);
-      state = jsonList.map((e) => TaskRecord.fromJson(e as Map<String, dynamic>)).toList();
+      try {
+        final List<dynamic> jsonList = json.decode(jsonString);
+        state = jsonList.map((e) => TaskRecord.fromJson(e as Map<String, dynamic>)).toList();
+      } catch (_) {
+        // 数据损坏时清空旧记录，下次保存会覆盖
+        state = [];
+      }
     }
   }
 

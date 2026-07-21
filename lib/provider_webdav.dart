@@ -111,10 +111,11 @@ class WebDavNotifier extends StateNotifier<WebDavState> {
     if (!config.isValid) return _fail('请填写有效的 HTTPS/HTTP 地址和远程路径');
     state = state.copyWith(loading: true, clearMessage: true);
     try {
-      final response = http.Request('PROPFIND', _directoryUri(config));
-      response.headers.addAll(_headers(config, json: false));
-      response.headers['Depth'] = '0';
-      final result = await response.send().timeout(const Duration(seconds: 15));
+      final request = http.Request('PROPFIND', _directoryUri(config));
+      request.headers.addAll(_headers(config, json: false));
+      request.headers['Depth'] = '0';
+      final result = await request.send().timeout(const Duration(seconds: 15));
+      result.stream.drain(); // 确保连接释放
       if ({200, 207, 301, 302, 404}.contains(result.statusCode)) {
         state = state.copyWith(
           loading: false,
@@ -145,7 +146,7 @@ class WebDavNotifier extends StateNotifier<WebDavState> {
       final payload = utf8.encode(jsonEncode({
         'format': 'bananachock-backup',
         'schemaVersion': 1,
-        'appVersion': '1.1.1',
+        'appVersion': '1.1.3',
         'createdAt': DateTime.now().toUtc().toIso8601String(),
         'preferences': values,
       }));

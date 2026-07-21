@@ -77,13 +77,13 @@ jobs:
           source_apk="build/app/outputs/flutter-apk/app-arm64-v8a-release.apk"
           test -f "$source_apk"
           mkdir -p dist
-          cp "$source_apk" dist/Bananachock-v1.1.2-arm64-v8a.apk
+          cp "$source_apk" dist/Bananachock-v1.1.3-arm64-v8a.apk
 
       - name: Upload ARM64 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bananachock-v1.1.2-arm64-v8a
-          path: dist/Bananachock-v1.1.2-arm64-v8a.apk
+          name: bananachock-v1.1.3-arm64-v8a
+          path: dist/Bananachock-v1.1.3-arm64-v8a.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -91,16 +91,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="v1.1.2"
-          title="Bananachock v1.1.2"
+          tag="v1.1.3"
+          title="Bananachock v1.1.3"
           signing_note="使用仓库配置的正式发布密钥签名。"
 
           cat > "$RUNNER_TEMP/release-notes.md" <<EOF
-          ## Bananachock v1.1.2
+          ## Bananachock v1.1.3
 
-          - 竖屏沉浸时名言栏上移，避开底部跳过/退出沉浸按钮组
-          - 恢复专注时长/休息时长选择器（_DurationRow）与自定义时间输入
-          - 修复任务名输入框与开始专注按钮垂直重叠问题
+          - 专注结束后自动开启休息计时，无需手动点击开始
+          - 增加休息时间跳过按钮（非沉浸/沉浸模式均可用）
+          - 优化全屏适配，去除状态栏黑边
 
           ${signing_note}
           EOF

@@ -99,7 +99,7 @@ class SettingsScreen extends ConsumerWidget {
             _Item(
               icon: Icons.info_outline,
               title: "关于 Bananachock",
-              subtitle: "v1.1.1 | 作者、项目与技术支持",
+              subtitle: "v1.1.3 | 作者、项目与技术支持",
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const _AboutScreen()),
               ),

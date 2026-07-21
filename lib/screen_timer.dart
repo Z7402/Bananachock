@@ -31,10 +31,28 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     _timePulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    ); // 不自动 repeat，由 build 控制
+    );
     _timePulseAnim = Tween<double>(begin: 0.98, end: 1.02).animate(
       CurvedAnimation(parent: _timePulseController, curve: Curves.easeInOut),
     );
+    // 初始化：状态栏透明无黑边
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+    );
+    // 监听休息状态切换，自动退出沉浸
+    ref.listen<TimerState>(timerProvider, (previous, next) {
+      if (previous != null &&
+          !previous.isBreak &&
+          next.isBreak &&
+          _immersiveFocus) {
+        _setImmersive(false);
+      }
+    });
   }
 
   @override
@@ -51,6 +69,14 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     widget.onImmersiveChanged?.call(value);
     if (value) {
       await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      await SystemChrome.setSystemUIOverlayStyle(
+        const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          systemNavigationBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+          systemNavigationBarIconBrightness: Brightness.light,
+        ),
+      );
     } else {
       await _restoreSystemUi();
     }
@@ -66,14 +92,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   @override
   Widget build(BuildContext context) {
     final timerState = ref.watch(timerProvider);
-    ref.listen<TimerState>(timerProvider, (previous, next) {
-      if (previous != null &&
-          !previous.isBreak &&
-          next.isBreak &&
-          _immersiveFocus) {
-        _setImmersive(false);
-      }
-    });
     final cs = Theme.of(context).colorScheme;
     final quote = ref.watch(quoteProvider);
     if (timerState.isRunning && !_timePulseController.isAnimating) {
@@ -155,7 +173,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
   Widget _buildSharedTimerVisual(ColorScheme cs, TimerState timerState) {
     return TweenAnimationBuilder<double>(
-      tween: Tween(end: timerState.progress.clamp(0.0, 1.0).toDouble()),
+      tween: Tween<double>(begin: 0, end: timerState.progress.clamp(0.0, 1.0).toDouble()),
       duration:
           timerState.isRunning ? const Duration(seconds: 1) : Duration.zero,
       curve: Curves.linear,
@@ -261,6 +279,20 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
               ),
             ]),
           ),
+        // 休息中 → 显示跳过按钮
+        if (timerState.isRunning && timerState.isBreak) ...[
+          const SizedBox(height: 4),
+          OutlinedButton.icon(
+            onPressed: () => ref.read(timerProvider.notifier).skipBreak(),
+            icon: const Icon(Icons.skip_next_rounded),
+            label: const Text('跳过休息'),
+            style: OutlinedButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
       ]),
     );
   }
@@ -270,20 +302,30 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text(timerState.isRunning ? '专注进行中' : '专注已暂停',
+        Text(timerState.isRunning
+            ? (timerState.isBreak ? '休息中' : '专注进行中')
+            : (timerState.isBreak ? '休息已暂停' : '专注已暂停'),
             style: TextStyle(color: cs.onSurfaceVariant, letterSpacing: 2)),
         const SizedBox(height: 8),
         Row(mainAxisSize: MainAxisSize.min, children: [
-          IconButton.filledTonal(
-            tooltip: '结束本轮',
-            onPressed: () {
-              timerState.isBreak
-                  ? ref.read(timerProvider.notifier).reset()
-                  : ref.read(timerProvider.notifier).forceFinishFocus();
-              _setImmersive(false);
-            },
-            icon: const Icon(Icons.skip_next_rounded),
-          ),
+          if (timerState.isBreak)
+            IconButton.filledTonal(
+              tooltip: '跳过休息',
+              onPressed: () {
+                ref.read(timerProvider.notifier).skipBreak();
+                _setImmersive(false);
+              },
+              icon: const Icon(Icons.skip_next_rounded),
+            )
+          else
+            IconButton.filledTonal(
+              tooltip: '结束本轮',
+              onPressed: () {
+                ref.read(timerProvider.notifier).forceFinishFocus();
+                _setImmersive(false);
+              },
+              icon: const Icon(Icons.skip_next_rounded),
+            ),
           const SizedBox(width: 8),
           IconButton.filledTonal(
             tooltip: '退出沉浸',

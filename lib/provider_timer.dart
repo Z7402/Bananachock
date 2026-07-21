@@ -44,7 +44,7 @@ class TimerNotifier extends StateNotifier<TimerState> {
     _sessionStart = null;
     state = state.copyWith(
       isRunning: false,
-      remainingSeconds: state.mode == TimerMode.pomodoro ? state.totalSeconds : 0,
+      remainingSeconds: state.mode == TimerMode.pomodoro ? state.workSeconds : 0,
       isBreak: false,
     );
   }
@@ -104,9 +104,10 @@ class TimerNotifier extends StateNotifier<TimerState> {
     if (focusedSeconds > 0) {
       _recordTask(focusedSeconds);
     }
-    // 切换到休息
+    // 切换到休息并自动开始
+    _startBreakTimer();
     state = state.copyWith(
-      isRunning: false,
+      isRunning: true,
       remainingSeconds: state.breakSeconds,
       isBreak: true,
       completedPomodoros: state.completedPomodoros + 1,
@@ -126,6 +127,30 @@ class TimerNotifier extends StateNotifier<TimerState> {
     state = state.copyWith(isRunning: false, remainingSeconds: 0);
   }
 
+  /// 启动休息计时器（独立于 start()，仅用于倒计时）
+  void _startBreakTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (state.remainingSeconds <= 0) {
+        _onComplete();
+        return;
+      }
+      state = state.copyWith(remainingSeconds: state.remainingSeconds - 1);
+    });
+  }
+
+  /// 跳过当前休息，直接切回专注模式
+  void skipBreak() {
+    if (!state.isBreak) return;
+    _timer?.cancel();
+    state = state.copyWith(
+      isRunning: false,
+      remainingSeconds: state.workSeconds,
+      isBreak: false,
+    );
+    _sessionStart = null;
+  }
+
   void _onComplete() {
     _timer?.cancel();
     final wasBreak = state.isBreak;
@@ -133,9 +158,10 @@ class TimerNotifier extends StateNotifier<TimerState> {
     if (!wasBreak) {
       // 专注完成 -> 记录任务
       _recordTask(state.workSeconds);
-      // 自动进入休息
+      // 自动进入休息并开始计时
+      _startBreakTimer();
       state = state.copyWith(
-        isRunning: false,
+        isRunning: true,
         remainingSeconds: state.breakSeconds,
         completedPomodoros: state.completedPomodoros + 1,
         isBreak: true,
@@ -156,7 +182,9 @@ class TimerNotifier extends StateNotifier<TimerState> {
         ? state.currentTaskName
         : (state.mode == TimerMode.pomodoro ? '番茄专注' : '正向计时');
     final now = DateTime.now();
-    final startTime = _sessionStart ?? now.subtract(Duration(seconds: durationSeconds));
+    // 使用精确的实际开始时间，不受暂停影响
+    final startTime = now.subtract(Duration(seconds: durationSeconds));
+    _sessionStart = null;
 
     final task = TaskRecord(
       id: '${now.millisecondsSinceEpoch}_${now.microsecond}',
