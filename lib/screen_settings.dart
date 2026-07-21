@@ -90,7 +90,7 @@ class SettingsScreen extends ConsumerWidget {
             _Item(
               icon: Icons.system_update_rounded,
               title: "检查更新",
-              subtitle: "当前版本 v1.1.1 · 手动检查 GitHub Release",
+              subtitle: "当前版本 v1.1.2 · 手动检查 GitHub Release",
               onTap: () => _checkUpdate(context, ref),
             ),
           ]),
@@ -242,7 +242,7 @@ class _AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            "v1.1.1",
+            "v1.1.2",
             textAlign: TextAlign.center,
             style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600),
           ),

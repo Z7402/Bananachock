@@ -94,7 +94,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
             ? (landscape
                 ? const Alignment(0.56, 0.08)
                 : const Alignment(0, 0.50))
-            : const Alignment(0, 0.48);
+            : const Alignment(0, 0.28);
         return Stack(fit: StackFit.expand, children: [
           ColoredBox(color: cs.surface),
           _buildWallpaperBackground(),
@@ -147,7 +147,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                         : Alignment.bottomCenter,
                     child: _buildImmersiveSecondaryControls(cs, timerState))),
           )),
-          _buildFloatingQuote(cs, ref, timerState, quote),
+          _buildFloatingQuote(cs, ref, timerState, quote, landscape),
         ]);
       }),
     );
@@ -239,17 +239,27 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                     .read(timerProvider.notifier)
                     .setCurrentTaskName(value.trim()),
               )),
-        const SizedBox(height: 86),
-        if (timerState.mode == TimerMode.pomodoro)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('${timerState.workSeconds ~/ 60} 分钟专注'),
-              const SizedBox(width: 8),
-              TextButton(
-                  onPressed: () => ref.read(timerProvider.notifier).reset(),
-                  child: const Text('重置')),
-            ],
+        const SizedBox(height: 12),
+        if (timerState.mode == TimerMode.pomodoro && !timerState.isRunning)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              _DurationRow(
+                label: '专注时长',
+                currentMinutes: timerState.workSeconds ~/ 60,
+                durations: const [15, 20, 25, 30, 45, 60],
+                onChanged: (m) =>
+                    ref.read(timerProvider.notifier).setWorkMinutes(m),
+              ),
+              const SizedBox(height: 8),
+              _DurationRow(
+                label: '休息时长',
+                currentMinutes: timerState.breakSeconds ~/ 60,
+                durations: const [3, 5, 8, 10, 15, 20],
+                onChanged: (m) =>
+                    ref.read(timerProvider.notifier).setBreakMinutes(m),
+              ),
+            ]),
           ),
       ]),
     );
@@ -296,17 +306,20 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     );
   }
 
-  Widget _buildFloatingQuote(
-      ColorScheme cs, WidgetRef ref, TimerState timerState, QuoteState quote) {
+  Widget _buildFloatingQuote(ColorScheme cs, WidgetRef ref,
+      TimerState timerState, QuoteState quote, bool landscape) {
     // 沉浸模式下 Quote 出现在底部控制区上方；普通模式在顶部。
+    // 横屏沉浸: 引用在左侧区域上方; 竖屏: 在底部避开跳过/退出按钮(约80px)
+    final immersiveBottomOffset = landscape ? 16.0 : 100.0;
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 420),
       curve: Curves.easeInOutCubic,
       left: 16,
       right: 16,
       top: _immersiveFocus ? null : MediaQuery.paddingOf(context).top + 58,
-      bottom:
-          _immersiveFocus ? MediaQuery.paddingOf(context).bottom + 16 : null,
+      bottom: _immersiveFocus
+          ? MediaQuery.paddingOf(context).bottom + immersiveBottomOffset
+          : null,
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 320),
         opacity: _immersiveFocus ? 0.82 : (quote.text.isNotEmpty ? 1.0 : 0.0),
