@@ -111,8 +111,8 @@ class WebDavNotifier extends StateNotifier<WebDavState> {
     if (!config.isValid) return _fail('请填写有效的 HTTPS/HTTP 地址和远程路径');
     state = state.copyWith(loading: true, clearMessage: true);
     try {
-      final response = await http.Request('PROPFIND', _directoryUri(config))
-        ..headers.addAll(_headers(config, json: false));
+      final response = http.Request('PROPFIND', _directoryUri(config));
+      response.headers.addAll(_headers(config, json: false));
       response.headers['Depth'] = '0';
       final result = await response.send().timeout(const Duration(seconds: 15));
       if ({200, 207, 301, 302, 404}.contains(result.statusCode)) {
