@@ -70,6 +70,8 @@ class QuoteState {
   final String text;
   final String author;
   const QuoteState({this.text = "", this.author = ""});
+
+  bool get isEmpty => text.isEmpty;
 }
 
 final quoteProvider = StateNotifierProvider<QuotesNotifier, QuoteState>((ref) {

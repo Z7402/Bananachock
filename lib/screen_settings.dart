@@ -1,9 +1,10 @@
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
-import "package:shared_preferences/shared_preferences.dart";
 import "package:url_launcher/url_launcher.dart";
 import "provider_theme.dart";
 import "provider_wallpaper.dart";
+import "provider_app_update.dart";
+import "screen_webdav.dart";
 import "widget_theme_picker.dart";
 
 class SettingsScreen extends ConsumerWidget {
@@ -74,25 +75,23 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ]),
           const SizedBox(height: 20),
-          _Section(title: "数据", items: [
+          _Section(title: "数据与云同步", items: [
             _Item(
-              icon: Icons.backup,
-              title: "数据备份 / 导出",
-              subtitle: "备份数据库或导出 CSV",
-              onTap: () async {
-                final prefs = await SharedPreferences.getInstance();
-                final tasksJson = prefs.getString("bananachock_tasks") ?? "";
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("数据已准备导出（共 ${tasksJson.length} 字节）")),
-                );
-              },
+              icon: Icons.cloud_upload_outlined,
+              title: "WebDAV 云备份",
+              subtitle: "将任务数据与壁纸配置同步到云存储",
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const WebDavScreen()),
+              ),
             ),
+          ]),
+          const SizedBox(height: 20),
+          _Section(title: "更新", items: [
             _Item(
-              icon: Icons.restore,
-              title: "从备份恢复",
-              subtitle: "",
-              onTap: () => _showComingSoon(context, "恢复功能即将开放"),
+              icon: Icons.system_update_rounded,
+              title: "检查更新",
+              subtitle: "当前版本 v1.1.1 · 手动检查 GitHub Release",
+              onTap: () => _checkUpdate(context, ref),
             ),
           ]),
           const SizedBox(height: 20),
@@ -100,12 +99,55 @@ class SettingsScreen extends ConsumerWidget {
             _Item(
               icon: Icons.info_outline,
               title: "关于 Bananachock",
-              subtitle: "v1.1.0 | 作者、项目与技术支持",
+              subtitle: "v1.1.1 | 作者、项目与技术支持",
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const _AboutScreen()),
               ),
             ),
           ]),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _checkUpdate(BuildContext context, WidgetRef ref) async {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    final result = await ref.read(appUpdateProvider.notifier).checkForUpdate();
+    if (!context.mounted) return;
+    Navigator.of(context).pop();
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(result.error != null
+            ? "检查更新失败"
+            : result.updateAvailable
+                ? "发现 v${result.latestVersion}"
+                : "已是最新版本"),
+        content: SingleChildScrollView(
+          child: Text(result.error ??
+              "当前版本：v${result.currentVersion}\n最新版本：v${result.latestVersion}\n发布时间：${result.publishedAt?.toLocal().toString().substring(0, 16) ?? "未知"}\n\n${result.releaseNotes?.trim().isNotEmpty == true ? result.releaseNotes : "暂无更新说明"}${result.updateAvailable && result.downloadUrl == null ? "\n\n该 Release 未提供 APK，请前往发布页查看。" : ""}"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text("稍后"),
+          ),
+          if (result.releaseUrl != null)
+            TextButton(
+              onPressed: () =>
+                  ref.read(appUpdateProvider.notifier).openReleasePage(),
+              child: const Text("发布页"),
+            ),
+          if (result.updateAvailable)
+            FilledButton(
+              onPressed: () =>
+                  ref.read(appUpdateProvider.notifier).openDownload(),
+              child: Text(result.downloadUrl == null ? "查看版本" : "下载 APK"),
+            ),
         ],
       ),
     );
@@ -200,7 +242,7 @@ class _AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            "v1.1.0",
+            "v1.1.1",
             textAlign: TextAlign.center,
             style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600),
           ),

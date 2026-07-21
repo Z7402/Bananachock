@@ -91,69 +91,226 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   Widget build(BuildContext context) {
     final timerState = ref.watch(timerProvider);
     ref.listen<TimerState>(timerProvider, (previous, next) {
-      final focusJustFinished = previous != null &&
+      if (previous != null &&
           !previous.isBreak &&
           next.isBreak &&
-          _immersiveFocus;
-      if (focusJustFinished) {
+          _immersiveFocus) {
         _setImmersive(false);
       }
     });
-    final colorScheme = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme;
     final quote = ref.watch(quoteProvider);
-
-    // 动效控制：仅在运行时播放时间脉冲动画
-    if (timerState.isRunning) {
-      if (!_timePulseController.isAnimating) {
-        _timePulseController.repeat(reverse: true);
-      }
-    } else if (_timePulseController.isAnimating) {
+    if (timerState.isRunning && !_timePulseController.isAnimating) {
+      _timePulseController.repeat(reverse: true);
+    } else if (!timerState.isRunning && _timePulseController.isAnimating) {
       _timePulseController.stop();
     }
 
     return Scaffold(
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 420),
-        reverseDuration: const Duration(milliseconds: 320),
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
-        transitionBuilder: (child, animation) => FadeTransition(
-          opacity: animation,
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.985, end: 1).animate(animation),
-            child: child,
+      body: LayoutBuilder(builder: (context, constraints) {
+        final landscape = constraints.maxWidth > constraints.maxHeight;
+        final visualAlignment = _immersiveFocus
+            ? (landscape
+                ? const Alignment(-0.48, -0.05)
+                : const Alignment(0, -0.30))
+            : const Alignment(0, -0.16);
+        final buttonAlignment = _immersiveFocus
+            ? (landscape
+                ? const Alignment(0.56, 0.08)
+                : const Alignment(0, 0.50))
+            : const Alignment(0, 0.48);
+        return Stack(fit: StackFit.expand, children: [
+          ColoredBox(color: cs.surface),
+          _buildWallpaperBackground(),
+          SafeArea(
+              child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 360),
+            opacity: _immersiveFocus ? 0 : 1,
+            child: IgnorePointer(
+                ignoring: _immersiveFocus,
+                child: Align(
+                    alignment: Alignment.topCenter,
+                    child: _buildTopBar(cs, ref, timerState))),
+          )),
+          AnimatedAlign(
+            duration: const Duration(milliseconds: 620),
+            curve: Curves.easeInOutCubicEmphasized,
+            alignment: visualAlignment,
+            child: AnimatedScale(
+              duration: const Duration(milliseconds: 620),
+              curve: Curves.easeInOutCubicEmphasized,
+              scale: _immersiveFocus ? (landscape ? 0.72 : 0.82) : 1,
+              child: _buildSharedTimerVisual(cs, timerState),
+            ),
           ),
-        ),
-        child: _immersiveFocus
-            ? _buildImmersiveView(colorScheme, timerState)
-            : Stack(
-                key: const ValueKey('normal_timer'),
-                children: [
-                  Container(color: colorScheme.surface),
-                  _buildWallpaperBackground(),
-                  SafeArea(
-                    child: Column(
-                      children: [
-                        _buildTopBar(colorScheme, ref, timerState, quote),
-                        Expanded(
-                          child: _buildTimerCenter(
-                            colorScheme,
-                            ref,
-                            timerState,
-                          ),
-                        ),
-                        _buildBottomControls(colorScheme, ref, timerState),
-                        const SizedBox(height: 16),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+          AnimatedAlign(
+            duration: const Duration(milliseconds: 620),
+            curve: Curves.easeInOutCubicEmphasized,
+            alignment: buttonAlignment,
+            child: _buildSharedPrimaryButton(cs, timerState),
+          ),
+          SafeArea(
+              child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 300),
+            opacity: _immersiveFocus ? 0 : 1,
+            child: IgnorePointer(
+                ignoring: _immersiveFocus,
+                child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: _buildNormalOptions(cs, timerState))),
+          )),
+          SafeArea(
+              child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 420),
+            opacity: _immersiveFocus ? 1 : 0,
+            child: IgnorePointer(
+                ignoring: !_immersiveFocus,
+                child: Align(
+                    alignment: landscape
+                        ? const Alignment(0.58, 0.72)
+                        : Alignment.bottomCenter,
+                    child: _buildImmersiveSecondaryControls(cs, timerState))),
+          )),
+          _buildFloatingQuote(cs, ref, timerState, quote),
+        ]);
+      }),
+    );
+  }
+
+  Widget _buildSharedTimerVisual(ColorScheme cs, TimerState timerState) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: timerState.progress.clamp(0.0, 1.0).toDouble()),
+      duration:
+          timerState.isRunning ? const Duration(seconds: 1) : Duration.zero,
+      curve: Curves.linear,
+      builder: (context, progress, _) => SizedBox.square(
+        dimension: 300,
+        child: Stack(alignment: Alignment.center, children: [
+          TimerBackgroundAnimation(
+              progress: progress, isRunning: timerState.isRunning, size: 300),
+          ScaleTransition(
+            scale: timerState.isRunning
+                ? _timePulseAnim
+                : const AlwaysStoppedAnimation(1),
+            child: Text(timerState.formattedTime,
+                style: TextStyle(
+                  fontSize: 56,
+                  fontWeight: FontWeight.w200,
+                  letterSpacing: 6,
+                  color: cs.onSurface,
+                  shadows: [
+                    Shadow(color: cs.primary.withOpacity(0.24), blurRadius: 24)
+                  ],
+                )),
+          ),
+        ]),
       ),
     );
   }
 
-  Widget _buildImmersiveView(ColorScheme cs, TimerState timerState) {
+  Widget _buildSharedPrimaryButton(ColorScheme cs, TimerState timerState) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 620),
+      width: _immersiveFocus ? 66 : 72,
+      height: _immersiveFocus ? 66 : 72,
+      child: FloatingActionButton(
+        heroTag: 'shared_timer_primary',
+        onPressed: () {
+          final notifier = ref.read(timerProvider.notifier);
+          if (timerState.isRunning) {
+            notifier.pause();
+          } else {
+            notifier.start();
+            if (timerState.mode == TimerMode.pomodoro && !timerState.isBreak) {
+              _setImmersive(true);
+            }
+          }
+        },
+        backgroundColor: timerState.isRunning ? cs.secondary : cs.primary,
+        child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: Icon(
+              timerState.isRunning
+                  ? Icons.pause_rounded
+                  : Icons.play_arrow_rounded,
+              key: ValueKey(timerState.isRunning),
+              size: 34,
+              color: cs.onPrimary,
+            )),
+      ),
+    );
+  }
+
+  Widget _buildNormalOptions(ColorScheme cs, TimerState timerState) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 14),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        if (!timerState.isRunning)
+          SizedBox(
+              width: 240,
+              child: TextField(
+                controller: _taskNameController,
+                decoration: InputDecoration(
+                  hintText:
+                      '本次${timerState.mode == TimerMode.pomodoro ? '专注' : '计时'}任务名…',
+                  isDense: true,
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  filled: true,
+                  fillColor: cs.surfaceContainerLow.withOpacity(0.72),
+                ),
+                onChanged: (value) => ref
+                    .read(timerProvider.notifier)
+                    .setCurrentTaskName(value.trim()),
+              )),
+        const SizedBox(height: 86),
+        if (timerState.mode == TimerMode.pomodoro)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('${timerState.workSeconds ~/ 60} 分钟专注'),
+              const SizedBox(width: 8),
+              TextButton(
+                  onPressed: () => ref.read(timerProvider.notifier).reset(),
+                  child: const Text('重置')),
+            ],
+          ),
+      ]),
+    );
+  }
+
+  Widget _buildImmersiveSecondaryControls(
+      ColorScheme cs, TimerState timerState) {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text(timerState.isRunning ? '专注进行中' : '专注已暂停',
+            style: TextStyle(color: cs.onSurfaceVariant, letterSpacing: 2)),
+        const SizedBox(height: 8),
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          IconButton.filledTonal(
+            tooltip: '结束本轮',
+            onPressed: () {
+              timerState.isBreak
+                  ? ref.read(timerProvider.notifier).reset()
+                  : ref.read(timerProvider.notifier).forceFinishFocus();
+              _setImmersive(false);
+            },
+            icon: const Icon(Icons.skip_next_rounded),
+          ),
+          const SizedBox(width: 8),
+          IconButton.filledTonal(
+            tooltip: '退出沉浸',
+            onPressed: () => _setImmersive(false),
+            icon: const Icon(Icons.fullscreen_exit_rounded),
+          ),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _buildImmersiveView(
+      ColorScheme cs, TimerState timerState, QuoteState quote) {
     return LayoutBuilder(
       key: const ValueKey('immersive_timer'),
       builder: (context, constraints) {
@@ -201,7 +358,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           ),
         );
 
-        final controls = _buildImmersiveControls(cs, timerState);
+        final controls = _buildImmersiveControls(cs, timerState, quote);
         return Stack(
           children: [
             Container(color: cs.surface),
@@ -224,7 +381,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                         key: const ValueKey('immersive_landscape'),
                         children: [
                           Expanded(flex: 3, child: Center(child: visual)),
-                          Expanded(flex: 2, child: Center(child: controls)),
+                          Expanded(
+                              flex: 2,
+                              child: Center(
+                                  child:
+                                      SingleChildScrollView(child: controls))),
                         ],
                       )
                     : Column(
@@ -243,7 +404,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     );
   }
 
-  Widget _buildImmersiveControls(ColorScheme cs, TimerState timerState) {
+  Widget _buildImmersiveControls(ColorScheme cs, TimerState timerState,
+      [QuoteState? quote]) {
     return AnimatedSize(
       duration: const Duration(milliseconds: 280),
       curve: Curves.easeOutCubic,
@@ -343,47 +505,69 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     );
   }
 
-  Widget _buildTopBar(
+  Widget _buildFloatingQuote(
       ColorScheme cs, WidgetRef ref, TimerState timerState, QuoteState quote) {
+    // 沉浸模式下 Quote 出现在底部控制区上方；普通模式在顶部。
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeInOutCubic,
+      left: 16,
+      right: 16,
+      top: _immersiveFocus ? null : MediaQuery.paddingOf(context).top + 58,
+      bottom:
+          _immersiveFocus ? MediaQuery.paddingOf(context).bottom + 16 : null,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 320),
+        opacity: _immersiveFocus ? 0.82 : (quote.text.isNotEmpty ? 1.0 : 0.0),
+        child: _buildQuoteChip(
+            cs, quote, () => ref.read(quoteProvider.notifier).nextQuote(),
+            immersive: _immersiveFocus),
+      ),
+    );
+  }
+
+  Widget _buildQuoteChip(ColorScheme cs, QuoteState quote, VoidCallback onTap,
+      {bool immersive = false}) {
+    final bgOpacity = immersive ? 0.08 : 0.6;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerLow.withOpacity(bgOpacity),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(quote.text,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: cs.onSurface.withOpacity(0.75),
+                    height: 1.4),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis),
+            if (quote.author.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text('\u2014\u2014 ${quote.author}',
+                  style: TextStyle(
+                      fontSize: 10,
+                      color: cs.onSurfaceVariant.withOpacity(0.5),
+                      fontStyle: FontStyle.italic)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopBar(ColorScheme cs, WidgetRef ref, TimerState timerState) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Row(
         children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () => ref.read(quoteProvider.notifier).nextQuote(),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerLow.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(quote.text,
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: cs.onSurface.withOpacity(0.75),
-                            height: 1.4),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis),
-                    if (quote.author.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text('\u2014\u2014 ${quote.author}',
-                          style: TextStyle(
-                              fontSize: 10,
-                              color: cs.onSurfaceVariant.withOpacity(0.5),
-                              fontStyle: FontStyle.italic)),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
+          // 模式切换直接靠左，Quote 由浮动层独立控制
           SegmentedButton<TimerMode>(
             segments: const [
               ButtonSegment(
