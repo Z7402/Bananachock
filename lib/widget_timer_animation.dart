@@ -161,12 +161,12 @@ class _SunWavePainter extends CustomPainter {
     final sunRadius = w * (0.065 + 0.035 * sizeFactor);
     final sunCenter = Offset(sunX, sunY);
 
-    // 宽幅环境光束，越接近天空中央越明显。
+    // 宽幅环境光束：降低对比度并扩大过渡范围，避免硬边。
     final beamPath = Path()
-      ..moveTo(sunX - sunRadius * 0.5, sunY)
-      ..lineTo(sunX - w * 0.28, seaLevel)
-      ..lineTo(sunX + w * 0.28, seaLevel)
-      ..lineTo(sunX + sunRadius * 0.5, sunY)
+      ..moveTo(sunX - sunRadius * 0.7, sunY)
+      ..lineTo(sunX - w * 0.34, seaLevel + h * 0.03)
+      ..lineTo(sunX + w * 0.34, seaLevel + h * 0.03)
+      ..lineTo(sunX + sunRadius * 0.7, sunY)
       ..close();
     canvas.drawPath(
       beamPath,
@@ -175,43 +175,50 @@ class _SunWavePainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            sunColor.withOpacity(0.02),
-            sunColor.withOpacity(0.12 + 0.08 * sizeFactor),
+            sunColor.withOpacity(0),
+            sunColor.withOpacity(0.035 + 0.025 * sizeFactor),
+            sunColor.withOpacity(0.015),
             sunColor.withOpacity(0),
           ],
-        ).createShader(Rect.fromLTRB(0, sunY, w, seaLevel)),
+          stops: const [0, 0.32, 0.7, 1],
+        ).createShader(Rect.fromLTRB(0, sunY, w, seaLevel + h * 0.05)),
     );
 
-    // 三层柔光：环境晕、暖色晕、太阳边缘高光。
-    for (final layer in const [3.8, 2.5, 1.55]) {
+    // 多层低透明度柔光，使用中间色阶消除光晕边界。
+    for (final layer in const [5.2, 3.9, 2.8, 1.9]) {
       final radius = sunRadius * layer;
-      final alpha = layer == 3.8
-          ? 0.10
-          : layer == 2.5
-              ? 0.18
-              : 0.28;
+      final alpha = layer == 5.2
+          ? 0.035
+          : layer == 3.9
+              ? 0.055
+              : layer == 2.8
+                  ? 0.075
+                  : 0.10;
       canvas.drawCircle(
         sunCenter,
         radius,
         Paint()
           ..shader = RadialGradient(
             colors: [
-              sunColor.withOpacity(alpha * (0.7 + sizeFactor * 0.3)),
+              sunColor.withOpacity(alpha * (0.75 + sizeFactor * 0.25)),
+              sunColor.withOpacity(alpha * 0.45),
+              sunColor.withOpacity(alpha * 0.12),
               sunColor.withOpacity(0),
             ],
+            stops: const [0, 0.38, 0.72, 1],
           ).createShader(Rect.fromCircle(center: sunCenter, radius: radius)),
       );
     }
 
+    // 太阳本体保持均匀柔和，不再绘制偏心白色亮斑。
     final sunBodyPaint = Paint()
       ..shader = RadialGradient(
-        center: const Alignment(-0.28, -0.32),
         colors: [
-          Colors.white.withOpacity(0.92),
-          sunColor,
-          sunColor.withOpacity(0.64),
+          sunColor.withOpacity(0.96),
+          sunColor.withOpacity(0.88),
+          sunColor.withOpacity(0.68),
         ],
-        stops: const [0, 0.38, 1],
+        stops: const [0, 0.68, 1],
       ).createShader(Rect.fromCircle(center: sunCenter, radius: sunRadius));
     canvas.drawCircle(sunCenter, sunRadius, sunBodyPaint);
 

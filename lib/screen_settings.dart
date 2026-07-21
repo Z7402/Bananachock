@@ -1,6 +1,7 @@
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:shared_preferences/shared_preferences.dart";
+import "package:url_launcher/url_launcher.dart";
 import "provider_theme.dart";
 import "provider_wallpaper.dart";
 import "widget_theme_picker.dart";
@@ -98,9 +99,11 @@ class SettingsScreen extends ConsumerWidget {
           _Section(title: "关于", items: [
             _Item(
               icon: Icons.info_outline,
-              title: "Bananachock",
-              subtitle: "v1.0.1 | 极简时间管理",
-              onTap: () {},
+              title: "关于 Bananachock",
+              subtitle: "v1.1.0 | 作者、项目与技术支持",
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const _AboutScreen()),
+              ),
             ),
           ]),
         ],
@@ -148,6 +151,166 @@ class SettingsScreen extends ConsumerWidget {
 
   void _showComingSoon(BuildContext context, String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+}
+
+class _AboutScreen extends StatelessWidget {
+  const _AboutScreen();
+
+  static final Uri _authorUrl = Uri.parse("https://github.com/Z7402");
+  static final Uri _repositoryUrl =
+      Uri.parse("https://github.com/Z7402/Bananachock");
+  static final Uri _supportUrl =
+      Uri.parse("https://github.com/Z7402/Bananachock/issues");
+
+  Future<void> _openLink(BuildContext context, Uri uri) async {
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("无法打开链接，请检查浏览器设置")),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: AppBar(title: const Text("关于"), centerTitle: true),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+        children: [
+          Center(
+            child: Container(
+              width: 88,
+              height: 88,
+              decoration: BoxDecoration(
+                color: cs.primaryContainer,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: Icon(Icons.timer_rounded,
+                  size: 48, color: cs.onPrimaryContainer),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            "Bananachock",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "v1.1.0",
+            textAlign: TextAlign.center,
+            style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            "专注计时、长期时间记录与统计复盘工具。通过沉浸式光影动画，让每一次专注都更自然、更有节奏。",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              height: 1.55,
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 28),
+          _AboutCard(
+            title: "作者",
+            children: [
+              const ListTile(
+                leading: Icon(Icons.person_outline_rounded),
+                title: Text("Z7402"),
+                subtitle: Text("Bananachock 设计与开发"),
+              ),
+              ListTile(
+                leading: const Icon(Icons.open_in_new_rounded),
+                title: const Text("GitHub 个人主页"),
+                subtitle: const Text("github.com/Z7402"),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => _openLink(context, _authorUrl),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _AboutCard(
+            title: "开源项目",
+            children: [
+              ListTile(
+                leading: const Icon(Icons.code_rounded),
+                title: const Text("Bananachock GitHub 仓库"),
+                subtitle: const Text("查看源代码、版本发布与开发动态"),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => _openLink(context, _repositoryUrl),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _AboutCard(
+            title: "技术支持",
+            children: [
+              ListTile(
+                leading: const Icon(Icons.support_agent_rounded),
+                title: const Text("问题反馈与功能建议"),
+                subtitle: const Text("通过 GitHub Issues 提交问题"),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => _openLink(context, _supportUrl),
+              ),
+              const ListTile(
+                leading: Icon(Icons.developer_board_rounded),
+                title: Text("主要技术"),
+                subtitle: Text(
+                  "Flutter · Dart · Riverpod · Material 3\nAndroid ARM64 · GitHub Actions",
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Text(
+            "Made with focus by Z7402",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AboutCard extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+
+  const _AboutCard({required this.title, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 8, bottom: 8),
+          child: Text(
+            title,
+            style: TextStyle(
+              color: cs.primary,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1,
+            ),
+          ),
+        ),
+        Card(
+          margin: EdgeInsets.zero,
+          elevation: 0,
+          color: cs.surfaceContainerLow,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          clipBehavior: Clip.antiAlias,
+          child: Column(children: children),
+        ),
+      ],
+    );
   }
 }
 

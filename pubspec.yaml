@@ -1,7 +1,7 @@
 name: bananachock
 description: 长期时间监控与管理应用 - 番茄钟、正向计时、统计复盘、动态主题。
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: '>=3.1.0 <4.0.0'
@@ -21,6 +21,7 @@ dependencies:
   image_picker: ^1.0.4
   palette_generator: ^0.3.3
   http: ^1.1.0
+  url_launcher: ^6.2.2
 
 dev_dependencies:
   flutter_test:

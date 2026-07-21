@@ -159,8 +159,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       builder: (context, constraints) {
         final landscape = constraints.maxWidth > constraints.maxHeight;
         final artSize = (landscape
-                ? constraints.maxHeight.clamp(260.0, 560.0)
-                : constraints.maxWidth.clamp(280.0, 520.0))
+                ? (constraints.maxHeight * 0.72).clamp(220.0, 420.0)
+                : (constraints.maxWidth * 0.78).clamp(240.0, 360.0))
             .toDouble();
         final visual = TweenAnimationBuilder<double>(
           tween: Tween<double>(

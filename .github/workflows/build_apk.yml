@@ -77,13 +77,13 @@ jobs:
           source_apk="build/app/outputs/flutter-apk/app-arm64-v8a-release.apk"
           test -f "$source_apk"
           mkdir -p dist
-          cp "$source_apk" dist/Bananachock-arm64-v8a.apk
+          cp "$source_apk" dist/Bananachock-v1.1.0-arm64-v8a.apk
 
       - name: Upload ARM64 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bananachock-arm64-v8a
-          path: dist/Bananachock-arm64-v8a.apk
+          name: bananachock-v1.1.0-arm64-v8a
+          path: dist/Bananachock-v1.1.0-arm64-v8a.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -92,7 +92,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           tag="build-${GITHUB_RUN_NUMBER}"
-          asset="dist/Bananachock-arm64-v8a.apk"
+          asset="dist/Bananachock-v1.1.0-arm64-v8a.apk"
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             gh release upload "$tag" "$asset#Bananachock Android ARM64 APK" \
               --repo "$GITHUB_REPOSITORY" \
