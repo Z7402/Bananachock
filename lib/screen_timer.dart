@@ -15,14 +15,11 @@ class TimerScreen extends ConsumerStatefulWidget {
   ConsumerState<TimerScreen> createState() => _TimerScreenState();
 }
 
-class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderStateMixin {
+class _TimerScreenState extends ConsumerState<TimerScreen>
+    with TickerProviderStateMixin {
   late AnimationController _timePulseController;
   late Animation<double> _timePulseAnim;
   final _taskNameController = TextEditingController();
-
-  /// 进度平滑插值控制器 — 将 1s 一跳的 progress 插值为连续变化
-  late AnimationController _smoothProgController;
-  double _smoothProgress = 0.0;
 
   @override
   void initState() {
@@ -34,22 +31,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
     _timePulseAnim = Tween<double>(begin: 0.98, end: 1.02).animate(
       CurvedAnimation(parent: _timePulseController, curve: Curves.easeInOut),
     );
-
-    _smoothProgController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _smoothProgController.addListener(() {
-      if (_smoothProgController.isAnimating) {
-        setState(() {});
-      }
-    });
   }
 
   @override
   void dispose() {
     _timePulseController.dispose();
-    _smoothProgController.dispose();
     _taskNameController.dispose();
     super.dispose();
   }
@@ -62,20 +48,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
 
     // 动效控制：仅在运行时播放时间脉冲动画
     if (timerState.isRunning) {
-      if (!_timePulseController.isAnimating) _timePulseController.repeat(reverse: true);
+      if (!_timePulseController.isAnimating)
+        _timePulseController.repeat(reverse: true);
     } else {
       if (_timePulseController.isAnimating) _timePulseController.stop();
-    }
-
-    // 进度平滑插值：每秒将 progress 从当前值动画到目标值
-    final rawProgress = timerState.progress;
-    if (_smoothProgController.value != rawProgress) {
-      if (_smoothProgController.isAnimating) {
-        _smoothProgController.stop();
-      }
-      _smoothProgController
-        ..value = _smoothProgress
-        ..animateTo(rawProgress, duration: const Duration(milliseconds: 400), curve: Curves.easeOut);
     }
 
     return Scaffold(
@@ -87,7 +63,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
             child: Column(
               children: [
                 _buildTopBar(colorScheme, ref, timerState, quote),
-                Expanded(child: _buildTimerCenter(colorScheme, ref, timerState)),
+                Expanded(
+                    child: _buildTimerCenter(colorScheme, ref, timerState)),
                 _buildBottomControls(colorScheme, ref, timerState),
                 const SizedBox(height: 16),
               ],
@@ -103,13 +80,14 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
     if (!wallpaper.hasWallpaper) return const SizedBox.shrink();
     return Positioned.fill(
       child: Opacity(
-        opacity: 0.08,
+        opacity: wallpaper.opacity,
         child: Image.memory(wallpaper.imageBytes!, fit: BoxFit.cover),
       ),
     );
   }
 
-  Widget _buildTopBar(ColorScheme cs, WidgetRef ref, TimerState timerState, QuoteState quote) {
+  Widget _buildTopBar(
+      ColorScheme cs, WidgetRef ref, TimerState timerState, QuoteState quote) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Row(
@@ -118,7 +96,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
             child: GestureDetector(
               onTap: () => ref.read(quoteProvider.notifier).nextQuote(),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerLow.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(12),
@@ -127,10 +106,20 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(quote.text, style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.75), height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    Text(quote.text,
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: cs.onSurface.withValues(alpha: 0.75),
+                            height: 1.4),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis),
                     if (quote.author.isNotEmpty) ...[
                       const SizedBox(height: 2),
-                      Text('\u2014\u2014 ${quote.author}', style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant.withValues(alpha: 0.5), fontStyle: FontStyle.italic)),
+                      Text('\u2014\u2014 ${quote.author}',
+                          style: TextStyle(
+                              fontSize: 10,
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                              fontStyle: FontStyle.italic)),
                     ],
                   ],
                 ),
@@ -140,8 +129,14 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
           const SizedBox(width: 8),
           SegmentedButton<TimerMode>(
             segments: const [
-              ButtonSegment(value: TimerMode.pomodoro, label: Text('番茄', style: TextStyle(fontSize: 11)), icon: Icon(Icons.timer, size: 16)),
-              ButtonSegment(value: TimerMode.stopwatch, label: Text('正向', style: TextStyle(fontSize: 11)), icon: Icon(Icons.trending_up, size: 16)),
+              ButtonSegment(
+                  value: TimerMode.pomodoro,
+                  label: Text('番茄', style: TextStyle(fontSize: 11)),
+                  icon: Icon(Icons.timer, size: 16)),
+              ButtonSegment(
+                  value: TimerMode.stopwatch,
+                  label: Text('正向', style: TextStyle(fontSize: 11)),
+                  icon: Icon(Icons.trending_up, size: 16)),
             ],
             selected: {timerState.mode},
             onSelectionChanged: (Set<TimerMode> newSelection) {
@@ -150,7 +145,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
             style: ButtonStyle(
               visualDensity: VisualDensity.compact,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+              shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10))),
             ),
           ),
         ],
@@ -158,55 +154,83 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
     );
   }
 
-  Widget _buildTimerCenter(ColorScheme cs, WidgetRef ref, TimerState timerState) {
-    return AnimatedBuilder(
-      animation: _timePulseAnim,
-      builder: (context, child) {
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Spacer(flex: 1),
-            // 阶段标签
-            if (timerState.mode == TimerMode.pomodoro)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: timerState.isBreak ? cs.tertiaryContainer : cs.primaryContainer,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+  Widget _buildTimerCenter(
+      ColorScheme cs, WidgetRef ref, TimerState timerState) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Spacer(flex: 1),
+        // 阶段标签
+        if (timerState.mode == TimerMode.pomodoro)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              decoration: BoxDecoration(
+                color: timerState.isBreak
+                    ? cs.tertiaryContainer
+                    : cs.primaryContainer,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                timerState.isBreak ? '休息中' : '专注中',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: timerState.isBreak
+                      ? cs.onTertiaryContainer
+                      : cs.onPrimaryContainer,
+                ),
+              ),
+            ),
+          ),
+        TweenAnimationBuilder<double>(
+          tween: Tween<double>(
+            end: timerState.progress.clamp(0.0, 1.0).toDouble(),
+          ),
+          duration:
+              timerState.isRunning ? const Duration(seconds: 1) : Duration.zero,
+          curve: Curves.linear,
+          builder: (context, smoothProgress, child) {
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                TimerBackgroundAnimation(
+                  progress: smoothProgress,
+                  isRunning: timerState.isRunning,
+                  size: 300,
+                ),
+                ScaleTransition(
+                  scale: timerState.isRunning
+                      ? _timePulseAnim
+                      : const AlwaysStoppedAnimation<double>(1.0),
                   child: Text(
-                    timerState.isBreak ? '休息中' : '专注中',
+                    timerState.formattedTime,
                     style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: timerState.isBreak ? cs.onTertiaryContainer : cs.onPrimaryContainer,
+                      fontSize: 56,
+                      fontWeight: FontWeight.w200,
+                      letterSpacing: 6,
+                      color: cs.onSurface,
+                      shadows: [
+                        Shadow(
+                          color: cs.primary.withValues(alpha: 0.3),
+                          blurRadius: 20,
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ),
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                TimerBackgroundAnimation(progress: _smoothProgress, isRunning: timerState.isRunning, size: 300),
-                Transform.scale(
-                  scale: timerState.isRunning ? _timePulseAnim.value : 1.0,
-                  child: Text(
-                    timerState.formattedTime,
-                    style: TextStyle(fontSize: 56, fontWeight: FontWeight.w200, letterSpacing: 6, color: cs.onSurface, shadows: [Shadow(color: cs.primary.withValues(alpha: 0.3), blurRadius: 20)]),
-                  ),
-                ),
               ],
-            ),
-            const Spacer(flex: 1),
-          ],
-        );
-      },
+            );
+          },
+        ),
+        const Spacer(flex: 1),
+      ],
     );
   }
 
-  Widget _buildBottomControls(ColorScheme cs, WidgetRef ref, TimerState timerState) {
+  Widget _buildBottomControls(
+      ColorScheme cs, WidgetRef ref, TimerState timerState) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40),
       child: Column(
@@ -220,15 +244,21 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
                 child: TextField(
                   controller: _taskNameController,
                   decoration: InputDecoration(
-                    hintText: timerState.mode == TimerMode.pomodoro ? '本次专注任务名...' : '本次计时任务名...',
+                    hintText: timerState.mode == TimerMode.pomodoro
+                        ? '本次专注任务名...'
+                        : '本次计时任务名...',
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     filled: true,
                     fillColor: cs.surfaceContainerLow.withValues(alpha: 0.6),
                   ),
                   style: TextStyle(fontSize: 13, color: cs.onSurface),
-                  onChanged: (v) => ref.read(timerProvider.notifier).setCurrentTaskName(v.trim()),
+                  onChanged: (v) => ref
+                      .read(timerProvider.notifier)
+                      .setCurrentTaskName(v.trim()),
                 ),
               ),
             ),
@@ -236,53 +266,72 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
-                width: 72, height: 72,
+                width: 72,
+                height: 72,
                 child: FloatingActionButton(
                   heroTag: 'timer_main',
                   onPressed: () {
-                    if (timerState.isRunning) { ref.read(timerProvider.notifier).pause(); }
-                    else if (timerState.mode == TimerMode.stopwatch && timerState.remainingSeconds > 0) {
+                    if (timerState.isRunning) {
+                      ref.read(timerProvider.notifier).pause();
+                    } else if (timerState.mode == TimerMode.stopwatch &&
+                        timerState.remainingSeconds > 0) {
                       // 正向计时恢复
                       ref.read(timerProvider.notifier).start();
                     } else {
                       ref.read(timerProvider.notifier).start();
                     }
                   },
-                  backgroundColor: timerState.isRunning ? cs.secondary : cs.primary,
-                  child: Icon(timerState.isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded, size: 36, color: cs.onPrimary),
+                  backgroundColor:
+                      timerState.isRunning ? cs.secondary : cs.primary,
+                  child: Icon(
+                      timerState.isRunning
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      size: 36,
+                      color: cs.onPrimary),
                 ),
               ),
               const SizedBox(width: 32),
               // 正向计时：停止按钮（记录任务）
-              if (timerState.mode == TimerMode.stopwatch && timerState.remainingSeconds > 0)
+              if (timerState.mode == TimerMode.stopwatch &&
+                  timerState.remainingSeconds > 0)
                 SizedBox(
-                  width: 56, height: 56,
+                  width: 56,
+                  height: 56,
                   child: FloatingActionButton(
                     heroTag: 'timer_stop',
-                    onPressed: () => ref.read(timerProvider.notifier).stopStopwatch(),
+                    onPressed: () =>
+                        ref.read(timerProvider.notifier).stopStopwatch(),
                     backgroundColor: cs.errorContainer,
                     child: Icon(Icons.stop_rounded, color: cs.onErrorContainer),
                   ),
                 )
-              else if (timerState.mode == TimerMode.pomodoro && timerState.isRunning && !timerState.isBreak)
+              else if (timerState.mode == TimerMode.pomodoro &&
+                  timerState.isRunning &&
+                  !timerState.isBreak)
                 // 强制结束专注 → 进入休息
                 SizedBox(
-                  width: 56, height: 56,
+                  width: 56,
+                  height: 56,
                   child: FloatingActionButton(
                     heroTag: 'timer_force',
-                    onPressed: () => ref.read(timerProvider.notifier).forceFinishFocus(),
+                    onPressed: () =>
+                        ref.read(timerProvider.notifier).forceFinishFocus(),
                     backgroundColor: cs.tertiaryContainer,
-                    child: Icon(Icons.fast_forward_rounded, color: cs.onTertiaryContainer),
+                    child: Icon(Icons.fast_forward_rounded,
+                        color: cs.onTertiaryContainer),
                   ),
                 )
               else
                 SizedBox(
-                  width: 56, height: 56,
+                  width: 56,
+                  height: 56,
                   child: FloatingActionButton(
                     heroTag: 'timer_reset',
                     onPressed: () => ref.read(timerProvider.notifier).reset(),
                     backgroundColor: cs.surfaceContainerHighest,
-                    child: Icon(Icons.restart_alt_rounded, color: cs.onSurfaceVariant),
+                    child: Icon(Icons.restart_alt_rounded,
+                        color: cs.onSurfaceVariant),
                   ),
                 ),
             ],
@@ -293,14 +342,16 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with TickerProviderSt
               label: '专注',
               currentMinutes: timerState.workSeconds ~/ 60,
               durations: const [5, 15, 25, 45, 60],
-              onChanged: (m) => ref.read(timerProvider.notifier).setWorkMinutes(m),
+              onChanged: (m) =>
+                  ref.read(timerProvider.notifier).setWorkMinutes(m),
             ),
             const SizedBox(height: 6),
             _DurationRow(
               label: '休息',
               currentMinutes: timerState.breakSeconds ~/ 60,
               durations: const [1, 3, 5, 10, 15],
-              onChanged: (m) => ref.read(timerProvider.notifier).setBreakMinutes(m),
+              onChanged: (m) =>
+                  ref.read(timerProvider.notifier).setBreakMinutes(m),
             ),
           ],
         ],
@@ -314,7 +365,11 @@ class _DurationRow extends StatefulWidget {
   final int currentMinutes;
   final List<int> durations;
   final ValueChanged<int> onChanged;
-  const _DurationRow({required this.label, required this.currentMinutes, required this.durations, required this.onChanged});
+  const _DurationRow(
+      {required this.label,
+      required this.currentMinutes,
+      required this.durations,
+      required this.onChanged});
 
   @override
   State<_DurationRow> createState() => _DurationRowState();
@@ -364,7 +419,11 @@ class _DurationRowState extends State<_DurationRow> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(widget.label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: cs.onSurfaceVariant)),
+      Text(widget.label,
+          style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: cs.onSurfaceVariant)),
       const SizedBox(height: 4),
       SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -376,12 +435,17 @@ class _DurationRowState extends State<_DurationRow> {
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 3),
                 child: ActionChip(
-                  label: Text('${m}min', style: TextStyle(fontSize: 11, fontWeight: active ? FontWeight.w600 : FontWeight.normal)),
+                  label: Text('${m}min',
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight:
+                              active ? FontWeight.w600 : FontWeight.normal)),
                   onPressed: () {
                     _isCustom = false;
                     widget.onChanged(m);
                   },
-                  backgroundColor: active ? cs.primaryContainer : cs.surfaceContainerLow,
+                  backgroundColor:
+                      active ? cs.primaryContainer : cs.surfaceContainerLow,
                   side: BorderSide.none,
                   visualDensity: VisualDensity.compact,
                 ),
@@ -396,12 +460,18 @@ class _DurationRowState extends State<_DurationRow> {
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                   hintText: '自定义',
-                  hintStyle: TextStyle(fontSize: 10, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  hintStyle: TextStyle(
+                      fontSize: 10,
+                      color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
                   filled: true,
-                  fillColor: _isCustom ? cs.primaryContainer.withValues(alpha: 0.3) : cs.surfaceContainerLow,
+                  fillColor: _isCustom
+                      ? cs.primaryContainer.withValues(alpha: 0.3)
+                      : cs.surfaceContainerLow,
                 ),
                 style: TextStyle(fontSize: 12, color: cs.onSurface),
                 textAlign: TextAlign.center,
@@ -410,7 +480,8 @@ class _DurationRowState extends State<_DurationRow> {
               ),
             ),
             const SizedBox(width: 4),
-            Text('min', style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
+            Text('min',
+                style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
           ],
         ),
       ),

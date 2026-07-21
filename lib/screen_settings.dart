@@ -31,7 +31,12 @@ class SettingsScreen extends ConsumerWidget {
               subtitle: wallpaper.hasWallpaper ? "已设置壁纸，点击更换" : "使用本地图片自动适配色调",
               onTap: () => _pickWallpaper(context, ref),
             ),
-            if (wallpaper.hasWallpaper)
+            if (wallpaper.hasWallpaper) ...[
+              _WallpaperOpacitySlider(
+                value: wallpaper.opacity,
+                onChanged: (value) =>
+                    ref.read(wallpaperProvider.notifier).setOpacity(value),
+              ),
               _Item(
                 icon: Icons.delete_outline,
                 title: "移除壁纸",
@@ -43,6 +48,7 @@ class SettingsScreen extends ConsumerWidget {
                   );
                 },
               ),
+            ],
           ]),
           const SizedBox(height: 20),
           _Section(title: "专注辅助", items: [
@@ -62,7 +68,8 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.brightness_high,
               title: "保持屏幕常亮",
               subtitle: "计时期间防止熄屏",
-              onToggle: (v) => _showComingSoon(context, "屏幕常亮已${v ? "开启" : "关闭"}"),
+              onToggle: (v) =>
+                  _showComingSoon(context, "屏幕常亮已${v ? "开启" : "关闭"}"),
             ),
           ]),
           const SizedBox(height: 20),
@@ -103,7 +110,8 @@ class SettingsScreen extends ConsumerWidget {
 
   Future<void> _pickWallpaper(BuildContext context, WidgetRef ref) async {
     try {
-      final selected = await ref.read(wallpaperProvider.notifier).pickWallpaper();
+      final selected =
+          await ref.read(wallpaperProvider.notifier).pickWallpaper();
       if (!context.mounted || !selected) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("壁纸已更新")),
@@ -118,9 +126,12 @@ class SettingsScreen extends ConsumerWidget {
 
   String _themeName(AppThemeMode mode) {
     switch (mode) {
-      case AppThemeMode.light: return "浅色";
-      case AppThemeMode.dark: return "深色";
-      case AppThemeMode.system: return "跟随系统";
+      case AppThemeMode.light:
+        return "浅色";
+      case AppThemeMode.dark:
+        return "深色";
+      case AppThemeMode.system:
+        return "跟随系统";
     }
   }
 
@@ -129,7 +140,8 @@ class SettingsScreen extends ConsumerWidget {
       context: context,
       builder: (_) => ThemePickerDialog(
         currentMode: ref.read(themeProvider),
-        onSelected: (mode) => ref.read(themeProvider.notifier).setThemeMode(mode),
+        onSelected: (mode) =>
+            ref.read(themeProvider.notifier).setThemeMode(mode),
       ),
     );
   }
@@ -152,12 +164,18 @@ class _Section extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 8, bottom: 8),
-          child: Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: cs.primary, letterSpacing: 1)),
+          child: Text(title,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: cs.primary,
+                  letterSpacing: 1)),
         ),
         Card(
           elevation: 0,
           color: cs.surfaceContainerLow,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Column(children: items),
         ),
       ],
@@ -170,7 +188,11 @@ class _Item extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
-  const _Item({required this.icon, required this.title, required this.subtitle, required this.onTap});
+  const _Item(
+      {required this.icon,
+      required this.title,
+      required this.subtitle,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -178,10 +200,54 @@ class _Item extends StatelessWidget {
     return ListTile(
       leading: Icon(icon, color: cs.primary),
       title: Text(title),
-      subtitle: subtitle.isNotEmpty ? Text(subtitle, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)) : null,
+      subtitle: subtitle.isNotEmpty
+          ? Text(subtitle,
+              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant))
+          : null,
       trailing: const Icon(Icons.chevron_right_rounded),
       onTap: onTap,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    );
+  }
+}
+
+class _WallpaperOpacitySlider extends StatelessWidget {
+  final double value;
+  final ValueChanged<double> onChanged;
+
+  const _WallpaperOpacitySlider({
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final percent = (value * 100).round();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Row(
+        children: [
+          Icon(Icons.opacity_rounded, color: cs.primary),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("壁纸透明度  $percent%"),
+                Slider(
+                  value: value,
+                  min: 0,
+                  max: 1,
+                  divisions: 20,
+                  label: "$percent%",
+                  onChanged: onChanged,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -191,7 +257,11 @@ class _SwitchItem extends StatefulWidget {
   final String title;
   final String subtitle;
   final ValueChanged<bool> onToggle;
-  const _SwitchItem({required this.icon, required this.title, required this.subtitle, required this.onToggle});
+  const _SwitchItem(
+      {required this.icon,
+      required this.title,
+      required this.subtitle,
+      required this.onToggle});
 
   @override
   State<_SwitchItem> createState() => _SwitchItemState();
@@ -206,7 +276,10 @@ class _SwitchItemState extends State<_SwitchItem> {
     return SwitchListTile(
       secondary: Icon(widget.icon, color: cs.primary),
       title: Text(widget.title),
-      subtitle: widget.subtitle.isNotEmpty ? Text(widget.subtitle, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)) : null,
+      subtitle: widget.subtitle.isNotEmpty
+          ? Text(widget.subtitle,
+              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant))
+          : null,
       value: _value,
       onChanged: (v) {
         setState(() => _value = v);

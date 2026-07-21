@@ -16,53 +16,58 @@ class TimerBackgroundAnimation extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<TimerBackgroundAnimation> createState() => _TimerBackgroundAnimationState();
+  ConsumerState<TimerBackgroundAnimation> createState() =>
+      _TimerBackgroundAnimationState();
 }
 
-class _TimerBackgroundAnimationState extends ConsumerState<TimerBackgroundAnimation>
+class _TimerBackgroundAnimationState
+    extends ConsumerState<TimerBackgroundAnimation>
     with TickerProviderStateMixin {
   late AnimationController _waveController;
   late Animation<double> _waveAnim;
 
-  void _onWaveStatus(AnimationStatus status) {
-    if (status == AnimationStatus.completed && widget.isRunning) {
-      _waveController.forward(from: 0);
+  @override
+  void initState() {
+    super.initState();
+    _waveController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    );
+    // 线性相位保证循环首尾速度一致，避免 easeInOut 周期减速造成顿挫。
+    _waveAnim = Tween<double>(begin: 0, end: 2 * pi).animate(_waveController);
+    if (widget.isRunning) {
+      _waveController.repeat();
     }
   }
 
   @override
-  void initState() {
-    super.initState();
-    _waveController = AnimationController(vsync: this, duration: const Duration(seconds: 4));
-    _waveController.addStatusListener(_onWaveStatus);
-    _waveAnim = Tween<double>(begin: 0, end: 2 * pi).animate(
-      CurvedAnimation(parent: _waveController, curve: Curves.easeInOut),
-    );
+  void didUpdateWidget(covariant TimerBackgroundAnimation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isRunning == oldWidget.isRunning) return;
+    if (widget.isRunning) {
+      _waveController.repeat();
+    } else {
+      _waveController.stop(canceled: false);
+    }
   }
 
   @override
   void dispose() {
-    _waveController.removeStatusListener(_onWaveStatus);
     _waveController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // 波浪动效：仅运行时播放，暂停时停在当前位置
-    if (widget.isRunning) {
-      if (!_waveController.isAnimating) {
-        _waveController.forward(from: _waveController.value);
-      }
-    } else {
-      if (_waveController.isAnimating) _waveController.stop();
-    }
-
     final cs = Theme.of(context).colorScheme;
     final wallpaper = ref.watch(wallpaperProvider);
-    final skyTop = wallpaper.hasWallpaper ? wallpaper.mutedAccent : cs.primaryContainer;
-    final skyBottom = wallpaper.hasWallpaper ? (wallpaper.lightMutedColor ?? wallpaper.mutedAccent.withAlpha(100)) : cs.surface;
-    final sunColor = wallpaper.hasWallpaper ? wallpaper.primaryAccent : cs.primary;
+    final skyTop =
+        wallpaper.hasWallpaper ? wallpaper.mutedAccent : cs.primaryContainer;
+    final skyBottom = wallpaper.hasWallpaper
+        ? (wallpaper.lightMutedColor ?? wallpaper.mutedAccent.withAlpha(100))
+        : cs.surface;
+    final sunColor =
+        wallpaper.hasWallpaper ? wallpaper.primaryAccent : cs.primary;
 
     return AnimatedBuilder(
       animation: _waveAnim,
@@ -90,8 +95,11 @@ class _SunWavePainter extends CustomPainter {
   final Color skyTop, skyBottom, sunColor;
 
   _SunWavePainter({
-    required this.progress, required this.waveOffset,
-    required this.skyTop, required this.skyBottom, required this.sunColor,
+    required this.progress,
+    required this.waveOffset,
+    required this.skyTop,
+    required this.skyBottom,
+    required this.sunColor,
   });
 
   @override
@@ -106,7 +114,8 @@ class _SunWavePainter extends CustomPainter {
         end: Alignment.bottomCenter,
         colors: [skyTop, skyBottom],
       ).createShader(skyRect);
-    final skyRrect = RRect.fromRectAndRadius(skyRect, const Radius.circular(24));
+    final skyRrect =
+        RRect.fromRectAndRadius(skyRect, const Radius.circular(24));
     final skyPath = Path()..addRRect(skyRrect);
     canvas.drawPath(skyPath, skyPaint);
 
@@ -151,13 +160,16 @@ class _SunWavePainter extends CustomPainter {
     final seaPath = Path()..moveTo(0, seaLevel);
     for (double x = 0; x <= w; x += 2) {
       final nx = x / w;
-      final y = seaLevel
-          + sin(nx * 1.8 * 2 * pi + waveOffset) * amplitude
-          + sin(nx * 2.7 * pi * 1.8 + waveOffset * 1.3) * amplitude * 0.5
-          + sin(nx * 1.3 * pi * 1.8 + waveOffset * 1.7) * amplitude * 0.25;
+      final y = seaLevel +
+          sin(nx * 1.8 * 2 * pi + waveOffset) * amplitude +
+          sin(nx * 2.7 * pi * 1.8 + waveOffset * 2) * amplitude * 0.5 +
+          sin(nx * 1.3 * pi * 1.8 + waveOffset * 3) * amplitude * 0.25;
       seaPath.lineTo(x, y);
     }
-    seaPath..lineTo(w, h)..lineTo(0, h)..close();
+    seaPath
+      ..lineTo(w, h)
+      ..lineTo(0, h)
+      ..close();
 
     canvas.save();
     canvas.clipPath(skyPath);
@@ -171,30 +183,42 @@ class _SunWavePainter extends CustomPainter {
           sunColor.withValues(alpha: 0.08),
         ],
       ).createShader(Rect.fromLTWH(
-        0, seaLevel - amplitude * 2, w, h - seaLevel + amplitude * 2,
+        0,
+        seaLevel - amplitude * 2,
+        w,
+        h - seaLevel + amplitude * 2,
       ));
     canvas.drawPath(seaPath, seaPaint);
 
     // 次波浪
     final seaPath2 = Path()..moveTo(0, seaLevel + 4);
     for (double x = 0; x <= w; x += 2) {
-      final y = seaLevel + 4
-          + sin(x / w * 2.5 * 2 * pi + waveOffset * 0.8) * amplitude * 0.4
-          + sin(x / w * 2 * 2 * pi + waveOffset * 1.5) * amplitude * 0.3;
+      final y = seaLevel +
+          4 +
+          sin(x / w * 2.5 * 2 * pi + waveOffset) * amplitude * 0.4 +
+          sin(x / w * 2 * 2 * pi + waveOffset * 2) * amplitude * 0.3;
       seaPath2.lineTo(x, y);
     }
-    seaPath2..lineTo(w, h)..lineTo(0, h)..close();
-    canvas.drawPath(seaPath2, Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          sunColor.withValues(alpha: 0.3),
-          sunColor.withValues(alpha: 0.02),
-        ],
-      ).createShader(Rect.fromLTWH(
-        0, seaLevel + 4, w, h - seaLevel,
-      )));
+    seaPath2
+      ..lineTo(w, h)
+      ..lineTo(0, h)
+      ..close();
+    canvas.drawPath(
+        seaPath2,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              sunColor.withValues(alpha: 0.3),
+              sunColor.withValues(alpha: 0.02),
+            ],
+          ).createShader(Rect.fromLTWH(
+            0,
+            seaLevel + 4,
+            w,
+            h - seaLevel,
+          )));
     canvas.restore();
 
     // ─── 外圈进度环 ───
@@ -209,7 +233,10 @@ class _SunWavePainter extends CustomPainter {
     if (progress > 0.01) {
       final r = Rect.fromCircle(center: Offset(cx, cy - 10), radius: w * 0.42);
       canvas.drawArc(
-        r, -pi / 2, 2 * pi * progress, false,
+        r,
+        -pi / 2,
+        2 * pi * progress,
+        false,
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 3
