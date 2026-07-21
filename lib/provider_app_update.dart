@@ -102,7 +102,8 @@ class AppUpdateNotifier extends StateNotifier<AppUpdateState> {
 
   Future<bool> _open(String? value) async {
     final uri = value == null ? null : Uri.tryParse(value);
-    return uri != null && launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (uri == null) return false;
+    return launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   String? _semanticVersion(String input) =>
