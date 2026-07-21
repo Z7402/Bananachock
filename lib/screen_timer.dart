@@ -7,8 +7,6 @@ import 'model_task_record.dart';
 import 'provider_quotes.dart';
 import 'provider_wallpaper.dart';
 
-enum _OrientationMode { auto, portrait, landscape }
-
 /// 计时器主页面：包含番茄钟倒计时 / 正向计时器
 /// 集成海浪起伏+太阳东升西落动画、名言警句
 class TimerScreen extends ConsumerStatefulWidget {
@@ -26,7 +24,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   late Animation<double> _timePulseAnim;
   final _taskNameController = TextEditingController();
   bool _immersiveFocus = false;
-  _OrientationMode _orientationMode = _OrientationMode.auto;
 
   @override
   void initState() {
@@ -64,27 +61,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       SystemUiMode.edgeToEdge,
     );
     await SystemChrome.setPreferredOrientations(DeviceOrientation.values);
-  }
-
-  Future<void> _setOrientation(_OrientationMode mode) async {
-    setState(() => _orientationMode = mode);
-    switch (mode) {
-      case _OrientationMode.auto:
-        await SystemChrome.setPreferredOrientations(DeviceOrientation.values);
-        return;
-      case _OrientationMode.portrait:
-        await SystemChrome.setPreferredOrientations([
-          DeviceOrientation.portraitUp,
-          DeviceOrientation.portraitDown,
-        ]);
-        return;
-      case _OrientationMode.landscape:
-        await SystemChrome.setPreferredOrientations([
-          DeviceOrientation.landscapeLeft,
-          DeviceOrientation.landscapeRight,
-        ]);
-        return;
-    }
   }
 
   @override
