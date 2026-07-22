@@ -57,7 +57,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           systemNavigationBarColor: Colors.transparent,
           statusBarIconBrightness: Brightness.light,
           systemNavigationBarIconBrightness: Brightness.light,
-          statusBarContrastEnforced: false,
+          systemStatusBarContrastEnforced: false,
           systemNavigationBarContrastEnforced: false,
         ),
       );
