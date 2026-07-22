@@ -18,7 +18,7 @@ class AppUpdateState {
 
   const AppUpdateState({
     this.isChecking = false,
-    this.currentVersion = '1.1.3',
+    this.currentVersion = '1.1.5',
     this.latestVersion,
     this.downloadUrl,
     this.releaseUrl,
@@ -43,13 +43,15 @@ class AppUpdateNotifier extends StateNotifier<AppUpdateState> {
     try {
       final package = await PackageInfo.fromPlatform();
       final current = package.version;
-      final response = await http.get(
-        Uri.parse(_latestReleaseApi),
-        headers: const {
-          'Accept': 'application/vnd.github+json',
-          'X-GitHub-Api-Version': '2022-11-28',
-        },
-      ).timeout(const Duration(seconds: 15));
+      final response = await http
+          .get(
+            Uri.parse(_latestReleaseApi),
+            headers: const {
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
       if (response.statusCode != 200) {
         throw Exception(_httpMessage(response.statusCode));
       }
@@ -73,8 +75,10 @@ class AppUpdateNotifier extends StateNotifier<AppUpdateState> {
       }
       apkUrl ??= (data['assets'] as List<dynamic>? ?? const [])
           .cast<Map<String, dynamic>>()
-          .where((asset) =>
-              (asset['name'] as String? ?? '').toLowerCase().endsWith('.apk'))
+          .where(
+            (asset) =>
+                (asset['name'] as String? ?? '').toLowerCase().endsWith('.apk'),
+          )
           .map((asset) => asset['browser_download_url'] as String?)
           .whereType<String>()
           .firstOrNull;
@@ -113,8 +117,10 @@ class AppUpdateNotifier extends StateNotifier<AppUpdateState> {
     final a = latest.split('.').map(int.parse).toList();
     final normalizedCurrent =
         _semanticVersion(current) ?? current.split('+').first;
-    final b =
-        normalizedCurrent.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+    final b = normalizedCurrent
+        .split('.')
+        .map((e) => int.tryParse(e) ?? 0)
+        .toList();
     for (var i = 0; i < 3; i++) {
       if (a[i] != b[i]) return a[i] > b[i];
     }
@@ -122,13 +128,13 @@ class AppUpdateNotifier extends StateNotifier<AppUpdateState> {
   }
 
   String _httpMessage(int code) => switch (code) {
-        403 => 'GitHub API 请求受限，请稍后重试',
-        404 => '未找到正式 Release',
-        _ => '检查更新失败（HTTP $code）',
-      };
+    403 => 'GitHub API 请求受限，请稍后重试',
+    404 => '未找到正式 Release',
+    _ => '检查更新失败（HTTP $code）',
+  };
 }
 
 final appUpdateProvider =
     StateNotifierProvider<AppUpdateNotifier, AppUpdateState>((ref) {
-  return AppUpdateNotifier();
-});
+      return AppUpdateNotifier();
+    });

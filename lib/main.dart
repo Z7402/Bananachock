@@ -11,10 +11,14 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   Intl.defaultLocale = 'zh_CN';
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    systemNavigationBarColor: Colors.transparent,
-  ));
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      systemNavigationBarColor: Colors.transparent,
+      statusBarContrastEnforced: false,
+      systemNavigationBarContrastEnforced: false,
+    ),
+  );
   runApp(const ProviderScope(child: BananachockApp()));
 }
 
@@ -37,29 +41,65 @@ class BananachockApp extends ConsumerWidget {
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
             colorScheme: lightDynamic != null
-                ? ColorScheme.fromSeed(seedColor: seedColor, brightness: Brightness.light)
-                : ColorScheme.fromSeed(seedColor: seedColor, brightness: Brightness.light),
+                ? ColorScheme.fromSeed(
+                    seedColor: seedColor,
+                    brightness: Brightness.light,
+                  )
+                : ColorScheme.fromSeed(
+                    seedColor: seedColor,
+                    brightness: Brightness.light,
+                  ),
             useMaterial3: true,
             cardTheme: CardThemeData(
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            appBarTheme: const AppBarTheme(
+              systemOverlayStyle: SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                systemNavigationBarColor: Colors.transparent,
+                statusBarIconBrightness: Brightness.dark,
+                systemNavigationBarIconBrightness: Brightness.dark,
+                statusBarContrastEnforced: false,
+                systemNavigationBarContrastEnforced: false,
+              ),
             ),
           ),
           darkTheme: ThemeData(
             colorScheme: darkDynamic != null
-                ? ColorScheme.fromSeed(seedColor: seedColor, brightness: Brightness.dark)
-                : ColorScheme.fromSeed(seedColor: seedColor, brightness: Brightness.dark),
+                ? ColorScheme.fromSeed(
+                    seedColor: seedColor,
+                    brightness: Brightness.dark,
+                  )
+                : ColorScheme.fromSeed(
+                    seedColor: seedColor,
+                    brightness: Brightness.dark,
+                  ),
             useMaterial3: true,
             cardTheme: CardThemeData(
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            appBarTheme: const AppBarTheme(
+              systemOverlayStyle: SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                systemNavigationBarColor: Colors.transparent,
+                statusBarIconBrightness: Brightness.light,
+                systemNavigationBarIconBrightness: Brightness.light,
+                statusBarContrastEnforced: false,
+                systemNavigationBarContrastEnforced: false,
+              ),
             ),
           ),
           themeMode: appThemeMode == AppThemeMode.light
               ? ThemeMode.light
               : appThemeMode == AppThemeMode.dark
-                  ? ThemeMode.dark
-                  : ThemeMode.system,
+              ? ThemeMode.dark
+              : ThemeMode.system,
           builder: (context, child) {
             final brightness = Theme.of(context).brightness;
             final iconBrightness = brightness == Brightness.dark
@@ -71,6 +111,7 @@ class BananachockApp extends ConsumerWidget {
                 systemNavigationBarColor: Colors.transparent,
                 statusBarIconBrightness: iconBrightness,
                 statusBarBrightness: brightness,
+                statusBarContrastEnforced: false,
                 systemNavigationBarIconBrightness: iconBrightness,
                 systemNavigationBarContrastEnforced: false,
               ),

@@ -2,6 +2,7 @@
 class TaskRecord {
   final String id;
   final String title;
+  final String description;
   final String category;
   final DateTime date;
   final Duration duration;
@@ -9,6 +10,7 @@ class TaskRecord {
   TaskRecord({
     required this.id,
     required this.title,
+    this.description = '',
     required this.category,
     required this.date,
     required this.duration,
@@ -18,6 +20,7 @@ class TaskRecord {
     return TaskRecord(
       id: json['id'] as String,
       title: json['title'] as String,
+      description: json['description'] as String? ?? '',
       category: json['category'] as String,
       date: DateTime.parse(json['date'] as String),
       duration: Duration(seconds: json['durationSeconds'] as int),
@@ -28,6 +31,7 @@ class TaskRecord {
     return {
       'id': id,
       'title': title,
+      'description': description,
       'category': category,
       'date': date.toIso8601String(),
       'durationSeconds': duration.inSeconds,

@@ -77,13 +77,13 @@ jobs:
           source_apk="build/app/outputs/flutter-apk/app-arm64-v8a-release.apk"
           test -f "$source_apk"
           mkdir -p dist
-          cp "$source_apk" dist/Bananachock-v1.1.4a-arm64-v8a.apk
+          cp "$source_apk" dist/Bananachock-v1.1.5-arm64-v8a.apk
 
       - name: Upload ARM64 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bananachock-v1.1.4a-arm64-v8a
-          path: dist/Bananachock-v1.1.4a-arm64-v8a.apk
+          name: bananachock-v1.1.5-arm64-v8a
+          path: dist/Bananachock-v1.1.5-arm64-v8a.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -91,17 +91,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="v1.1.4a"
-          title="v1.1.4a"
+          tag="v1.1.5"
+          title="v1.1.5"
           signing_note="使用仓库配置的正式发布密钥签名。"
 
           cat > "$RUNNER_TEMP/release-notes.md" <<EOF
-          ## Bananachock v1.1.4a
+          ## Bananachock v1.1.5
 
-          - 全局启用透明系统栏，修复应用打开后的状态栏黑边
-          - 专注与休息自然完成时播放提示音
-          - 统计日视图新增同任务名累计时长汇总表格
-          - 修复应用内设置页版本号显示未与发布版本同步的问题 (v1.1.4a)
+          - 统计任务记录新增任务细节描述，兼容已有记录
+          - 完善全面屏、刘海屏和透明系统栏适配
+          - 同步应用内版本、备份元数据与发布产物版本为 v1.1.5
 
           ${signing_note}
           EOF

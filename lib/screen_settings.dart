@@ -20,91 +20,108 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _Section(title: "个性化", items: [
-            _Item(
-              icon: Icons.color_lens,
-              title: "主题模式",
-              subtitle: _themeName(themeMode),
-              onTap: () => _showThemePicker(context, ref),
-            ),
-            _Item(
-              icon: Icons.wallpaper,
-              title: "更换背景壁纸",
-              subtitle: wallpaper.hasWallpaper ? "已设置壁纸，点击更换" : "使用本地图片自动适配色调",
-              onTap: () => _pickWallpaper(context, ref),
-            ),
-            if (wallpaper.hasWallpaper) ...[
-              _WallpaperOpacitySlider(
-                value: wallpaper.opacity,
-                onChanged: (value) =>
-                    ref.read(wallpaperProvider.notifier).setOpacity(value),
+          _Section(
+            title: "个性化",
+            items: [
+              _Item(
+                icon: Icons.color_lens,
+                title: "主题模式",
+                subtitle: _themeName(themeMode),
+                onTap: () => _showThemePicker(context, ref),
               ),
               _Item(
-                icon: Icons.delete_outline,
-                title: "移除壁纸",
-                subtitle: "恢复默认主题色调",
-                onTap: () {
-                  ref.read(wallpaperProvider.notifier).removeWallpaper();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("壁纸已移除")),
-                  );
-                },
+                icon: Icons.wallpaper,
+                title: "更换背景壁纸",
+                subtitle: wallpaper.hasWallpaper
+                    ? "已设置壁纸，点击更换"
+                    : "使用本地图片自动适配色调",
+                onTap: () => _pickWallpaper(context, ref),
+              ),
+              if (wallpaper.hasWallpaper) ...[
+                _WallpaperOpacitySlider(
+                  value: wallpaper.opacity,
+                  onChanged: (value) =>
+                      ref.read(wallpaperProvider.notifier).setOpacity(value),
+                ),
+                _Item(
+                  icon: Icons.delete_outline,
+                  title: "移除壁纸",
+                  subtitle: "恢复默认主题色调",
+                  onTap: () {
+                    ref.read(wallpaperProvider.notifier).removeWallpaper();
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text("壁纸已移除")));
+                  },
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 20),
+          _Section(
+            title: "专注辅助",
+            items: [
+              _Item(
+                icon: Icons.nightlight_round,
+                title: "白噪音 / 提示音效",
+                subtitle: "自定义专注背景音",
+                onTap: () => _showComingSoon(context, "白噪音功能即将开放"),
+              ),
+              _Item(
+                icon: Icons.screen_lock_portrait,
+                title: "息屏运行策略",
+                subtitle: "后台持续计时，降低功耗",
+                onTap: () => _showComingSoon(context, "息屏策略即将开放"),
+              ),
+              _SwitchItem(
+                icon: Icons.brightness_high,
+                title: "保持屏幕常亮",
+                subtitle: "计时期间防止熄屏",
+                onToggle: (v) =>
+                    _showComingSoon(context, "屏幕常亮已${v ? "开启" : "关闭"}"),
               ),
             ],
-          ]),
+          ),
           const SizedBox(height: 20),
-          _Section(title: "专注辅助", items: [
-            _Item(
-              icon: Icons.nightlight_round,
-              title: "白噪音 / 提示音效",
-              subtitle: "自定义专注背景音",
-              onTap: () => _showComingSoon(context, "白噪音功能即将开放"),
-            ),
-            _Item(
-              icon: Icons.screen_lock_portrait,
-              title: "息屏运行策略",
-              subtitle: "后台持续计时，降低功耗",
-              onTap: () => _showComingSoon(context, "息屏策略即将开放"),
-            ),
-            _SwitchItem(
-              icon: Icons.brightness_high,
-              title: "保持屏幕常亮",
-              subtitle: "计时期间防止熄屏",
-              onToggle: (v) =>
-                  _showComingSoon(context, "屏幕常亮已${v ? "开启" : "关闭"}"),
-            ),
-          ]),
-          const SizedBox(height: 20),
-          _Section(title: "数据与云同步", items: [
-            _Item(
-              icon: Icons.cloud_upload_outlined,
-              title: "WebDAV 云备份",
-              subtitle: "将任务数据与壁纸配置同步到云存储",
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const WebDavScreen()),
+          _Section(
+            title: "数据与云同步",
+            items: [
+              _Item(
+                icon: Icons.cloud_upload_outlined,
+                title: "WebDAV 云备份",
+                subtitle: "将任务数据与壁纸配置同步到云存储",
+                onTap: () => Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const WebDavScreen())),
               ),
-            ),
-          ]),
+            ],
+          ),
           const SizedBox(height: 20),
-          _Section(title: "更新", items: [
-            _Item(
-              icon: Icons.system_update_rounded,
-              title: "检查更新",
-              subtitle: "当前版本 v1.1.4 · 手动检查 GitHub Release",
-              onTap: () => _checkUpdate(context, ref),
-            ),
-          ]),
-          const SizedBox(height: 20),
-          _Section(title: "关于", items: [
-            _Item(
-              icon: Icons.info_outline,
-              title: "关于 Bananachock",
-              subtitle: "v1.1.4 | 作者、项目与技术支持",
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const _AboutScreen()),
+          _Section(
+            title: "更新",
+            items: [
+              _Item(
+                icon: Icons.system_update_rounded,
+                title: "检查更新",
+                subtitle: "当前版本 v1.1.5 · 手动检查 GitHub Release",
+                onTap: () => _checkUpdate(context, ref),
               ),
-            ),
-          ]),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _Section(
+            title: "关于",
+            items: [
+              _Item(
+                icon: Icons.info_outline,
+                title: "关于 Bananachock",
+                subtitle: "v1.1.5 | 作者、项目与技术支持",
+                onTap: () => Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const _AboutScreen())),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -122,14 +139,18 @@ class SettingsScreen extends ConsumerWidget {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(result.error != null
-            ? "检查更新失败"
-            : result.updateAvailable
-                ? "发现 v${result.latestVersion}"
-                : "已是最新版本"),
+        title: Text(
+          result.error != null
+              ? "检查更新失败"
+              : result.updateAvailable
+              ? "发现 v${result.latestVersion}"
+              : "已是最新版本",
+        ),
         content: SingleChildScrollView(
-          child: Text(result.error ??
-              "当前版本：v${result.currentVersion}\n最新版本：v${result.latestVersion}\n发布时间：${result.publishedAt?.toLocal().toString().substring(0, 16) ?? "未知"}\n\n${result.releaseNotes?.trim().isNotEmpty == true ? result.releaseNotes : "暂无更新说明"}${result.updateAvailable && result.downloadUrl == null ? "\n\n该 Release 未提供 APK，请前往发布页查看。" : ""}"),
+          child: Text(
+            result.error ??
+                "当前版本：v${result.currentVersion}\n最新版本：v${result.latestVersion}\n发布时间：${result.publishedAt?.toLocal().toString().substring(0, 16) ?? "未知"}\n\n${result.releaseNotes?.trim().isNotEmpty == true ? result.releaseNotes : "暂无更新说明"}${result.updateAvailable && result.downloadUrl == null ? "\n\n该 Release 未提供 APK，请前往发布页查看。" : ""}",
+          ),
         ),
         actions: [
           TextButton(
@@ -155,17 +176,18 @@ class SettingsScreen extends ConsumerWidget {
 
   Future<void> _pickWallpaper(BuildContext context, WidgetRef ref) async {
     try {
-      final selected =
-          await ref.read(wallpaperProvider.notifier).pickWallpaper();
+      final selected = await ref
+          .read(wallpaperProvider.notifier)
+          .pickWallpaper();
       if (!context.mounted || !selected) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("壁纸已更新")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("壁纸已更新")));
     } catch (_) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("无法读取所选图片，请重试")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("无法读取所选图片，请重试")));
     }
   }
 
@@ -200,17 +222,19 @@ class _AboutScreen extends StatelessWidget {
   const _AboutScreen();
 
   static final Uri _authorUrl = Uri.parse("https://github.com/Z7402");
-  static final Uri _repositoryUrl =
-      Uri.parse("https://github.com/Z7402/Bananachock");
-  static final Uri _supportUrl =
-      Uri.parse("https://github.com/Z7402/Bananachock/issues");
+  static final Uri _repositoryUrl = Uri.parse(
+    "https://github.com/Z7402/Bananachock",
+  );
+  static final Uri _supportUrl = Uri.parse(
+    "https://github.com/Z7402/Bananachock/issues",
+  );
 
   Future<void> _openLink(BuildContext context, Uri uri) async {
     final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!opened && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("无法打开链接，请检查浏览器设置")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("无法打开链接，请检查浏览器设置")));
     }
   }
 
@@ -230,8 +254,11 @@ class _AboutScreen extends StatelessWidget {
                 color: cs.primaryContainer,
                 borderRadius: BorderRadius.circular(28),
               ),
-              child: Icon(Icons.timer_rounded,
-                  size: 48, color: cs.onPrimaryContainer),
+              child: Icon(
+                Icons.timer_rounded,
+                size: 48,
+                color: cs.onPrimaryContainer,
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -242,7 +269,7 @@ class _AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            "v1.1.4",
+            "v1.1.5",
             textAlign: TextAlign.center,
             style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600),
           ),
@@ -250,10 +277,7 @@ class _AboutScreen extends StatelessWidget {
           Text(
             "专注计时、长期时间记录与统计复盘工具。通过沉浸式光影动画，让每一次专注都更自然、更有节奏。",
             textAlign: TextAlign.center,
-            style: TextStyle(
-              height: 1.55,
-              color: cs.onSurfaceVariant,
-            ),
+            style: TextStyle(height: 1.55, color: cs.onSurfaceVariant),
           ),
           const SizedBox(height: 28),
           _AboutCard(
@@ -346,8 +370,9 @@ class _AboutCard extends StatelessWidget {
           margin: EdgeInsets.zero,
           elevation: 0,
           color: cs.surfaceContainerLow,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
           clipBehavior: Clip.antiAlias,
           child: Column(children: children),
         ),
@@ -369,18 +394,22 @@ class _Section extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 8, bottom: 8),
-          child: Text(title,
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: cs.primary,
-                  letterSpacing: 1)),
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: cs.primary,
+              letterSpacing: 1,
+            ),
+          ),
         ),
         Card(
           elevation: 0,
           color: cs.surfaceContainerLow,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: Column(children: items),
         ),
       ],
@@ -393,11 +422,12 @@ class _Item extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
-  const _Item(
-      {required this.icon,
-      required this.title,
-      required this.subtitle,
-      required this.onTap});
+  const _Item({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -406,8 +436,10 @@ class _Item extends StatelessWidget {
       leading: Icon(icon, color: cs.primary),
       title: Text(title),
       subtitle: subtitle.isNotEmpty
-          ? Text(subtitle,
-              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant))
+          ? Text(
+              subtitle,
+              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+            )
           : null,
       trailing: const Icon(Icons.chevron_right_rounded),
       onTap: onTap,
@@ -420,10 +452,7 @@ class _WallpaperOpacitySlider extends StatelessWidget {
   final double value;
   final ValueChanged<double> onChanged;
 
-  const _WallpaperOpacitySlider({
-    required this.value,
-    required this.onChanged,
-  });
+  const _WallpaperOpacitySlider({required this.value, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -462,11 +491,12 @@ class _SwitchItem extends StatefulWidget {
   final String title;
   final String subtitle;
   final ValueChanged<bool> onToggle;
-  const _SwitchItem(
-      {required this.icon,
-      required this.title,
-      required this.subtitle,
-      required this.onToggle});
+  const _SwitchItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onToggle,
+  });
 
   @override
   State<_SwitchItem> createState() => _SwitchItemState();
@@ -482,8 +512,10 @@ class _SwitchItemState extends State<_SwitchItem> {
       secondary: Icon(widget.icon, color: cs.primary),
       title: Text(widget.title),
       subtitle: widget.subtitle.isNotEmpty
-          ? Text(widget.subtitle,
-              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant))
+          ? Text(
+              widget.subtitle,
+              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+            )
           : null,
       value: _value,
       onChanged: (v) {

@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 
 class AddTaskDialog extends StatefulWidget {
-  final void Function(String title, String category, Duration duration) onAdd;
+  final void Function(
+    String title,
+    String description,
+    String category,
+    Duration duration,
+  )
+  onAdd;
   const AddTaskDialog({super.key, required this.onAdd});
   @override
   State<AddTaskDialog> createState() => _AddTaskDialogState();
@@ -9,53 +15,108 @@ class AddTaskDialog extends StatefulWidget {
 
 class _AddTaskDialogState extends State<AddTaskDialog> {
   final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
   String _selectedCategory = '学习';
   int _hours = 0;
   int _minutes = 0;
   static const List<String> categories = ['学习', '娱乐', '运动', '工作', '阅读', '其他'];
 
   @override
-  void dispose() { _titleController.dispose(); super.dispose(); }
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('记录任务'),
       content: SingleChildScrollView(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: _titleController, decoration: const InputDecoration(labelText: '任务名称', border: OutlineInputBorder())),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
- value: _selectedCategory,
- decoration: const InputDecoration(labelText: '分类', border: OutlineInputBorder()),
- items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
- onChanged: (v) => setState(() => _selectedCategory = v!),
- ),
-          const SizedBox(height: 16),
-          Text('耗时', style: Theme.of(context).textTheme.labelLarge),
-          const SizedBox(height: 8),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Column(children: [
-              Text('小时', style: Theme.of(context).textTheme.bodySmall),
-              const SizedBox(height: 4),
-              _CompactPicker(value: _hours, min: 0, max: 23, onChanged: (v) => setState(() => _hours = v)),
-            ]),
-            const SizedBox(width: 24),
-            Column(children: [
-              Text('分钟', style: Theme.of(context).textTheme.bodySmall),
-              const SizedBox(height: 4),
-              _CompactPicker(value: _minutes, min: 0, max: 59, onChanged: (v) => setState(() => _minutes = v)),
-            ]),
-          ]),
-        ]),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                labelText: '任务名称',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: '任务细节描述（可选）',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: _selectedCategory,
+              decoration: const InputDecoration(
+                labelText: '分类',
+                border: OutlineInputBorder(),
+              ),
+              items: categories
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                  .toList(),
+              onChanged: (v) => setState(() => _selectedCategory = v!),
+            ),
+            const SizedBox(height: 16),
+            Text('耗时', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Column(
+                  children: [
+                    Text('小时', style: Theme.of(context).textTheme.bodySmall),
+                    const SizedBox(height: 4),
+                    _CompactPicker(
+                      value: _hours,
+                      min: 0,
+                      max: 23,
+                      onChanged: (v) => setState(() => _hours = v),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 24),
+                Column(
+                  children: [
+                    Text('分钟', style: Theme.of(context).textTheme.bodySmall),
+                    const SizedBox(height: 4),
+                    _CompactPicker(
+                      value: _minutes,
+                      min: 0,
+                      max: 59,
+                      onChanged: (v) => setState(() => _minutes = v),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
-        FilledButton(onPressed: () {
-          if (_titleController.text.trim().isEmpty) return;
-          widget.onAdd(_titleController.text.trim(), _selectedCategory, Duration(hours: _hours, minutes: _minutes));
-          Navigator.pop(context);
-        }, child: const Text('保存')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (_titleController.text.trim().isEmpty) return;
+            widget.onAdd(
+              _titleController.text.trim(),
+              _descriptionController.text.trim(),
+              _selectedCategory,
+              Duration(hours: _hours, minutes: _minutes),
+            );
+            Navigator.pop(context);
+          },
+          child: const Text('保存'),
+        ),
       ],
     );
   }
@@ -64,13 +125,40 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
 class _CompactPicker extends StatelessWidget {
   final int value, min, max;
   final ValueChanged<int> onChanged;
-  const _CompactPicker({required this.value, required this.min, required this.max, required this.onChanged});
+  const _CompactPicker({
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.onChanged,
+  });
   @override
   Widget build(BuildContext context) {
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      IconButton(icon: const Icon(Icons.remove_circle_outline, size: 20), onPressed: value > min ? () => onChanged(value - 1) : null, visualDensity: VisualDensity.compact, padding: EdgeInsets.zero, constraints: const BoxConstraints()),
-      SizedBox(width: 28, child: Text(value.toString().padLeft(2, '0'), textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleSmall)),
-      IconButton(icon: const Icon(Icons.add_circle_outline, size: 20), onPressed: value < max ? () => onChanged(value + 1) : null, visualDensity: VisualDensity.compact, padding: EdgeInsets.zero, constraints: const BoxConstraints()),
-    ]);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.remove_circle_outline, size: 20),
+          onPressed: value > min ? () => onChanged(value - 1) : null,
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+        SizedBox(
+          width: 28,
+          child: Text(
+            value.toString().padLeft(2, '0'),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.add_circle_outline, size: 20),
+          onPressed: value < max ? () => onChanged(value + 1) : null,
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+      ],
+    );
   }
 }
