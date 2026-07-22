@@ -148,6 +148,13 @@ class _DailyView extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final totalMinutes =
         todayTasks.fold(0, (sum, t) => sum + t.duration.inMinutes);
+    final taskDurationSummary = <String, Duration>{};
+    for (final task in todayTasks) {
+      taskDurationSummary[task.title] =
+          (taskDurationSummary[task.title] ?? Duration.zero) + task.duration;
+    }
+    final taskDurationEntries = taskDurationSummary.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -193,6 +200,48 @@ class _DailyView extends StatelessWidget {
               child: _CategoryPieChart(categoryDurations: categoryMap)),
           const SizedBox(height: 20),
         ],
+        // 同名任务时长汇总
+        Text('任务时长汇总', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        if (taskDurationEntries.isEmpty)
+          Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                  child: Text('暂无汇总数据',
+                      style: TextStyle(color: cs.onSurfaceVariant))))
+        else
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: cs.outlineVariant),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Table(
+              columnWidths: const {
+                0: FlexColumnWidth(2),
+                1: FlexColumnWidth(1),
+              },
+              border: TableBorder(
+                horizontalInside: BorderSide(color: cs.outlineVariant),
+              ),
+              children: [
+                TableRow(
+                  decoration: BoxDecoration(color: cs.surfaceContainerHighest),
+                  children: const [
+                    _SummaryCell('任务名', isHeader: true),
+                    _SummaryCell('累计时长', isHeader: true, alignEnd: true),
+                  ],
+                ),
+                ...taskDurationEntries.map((entry) => TableRow(children: [
+                      _SummaryCell(entry.key),
+                      _SummaryCell(_formatDuration(entry.value), alignEnd: true),
+                    ])),
+              ],
+            ),
+          ),
+        const SizedBox(height: 20),
         // 任务列表
         Text('任务记录', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
@@ -566,6 +615,36 @@ class _WeeklyChart extends StatelessWidget {
         )
       ],
     ));
+  }
+}
+
+String _formatDuration(Duration duration) {
+  final hours = duration.inHours;
+  final minutes = duration.inMinutes.remainder(60);
+  final seconds = duration.inSeconds.remainder(60);
+  if (hours > 0) return '${hours}h ${minutes}min';
+  if (minutes > 0) return '${minutes}min ${seconds}s';
+  return '${seconds}s';
+}
+
+class _SummaryCell extends StatelessWidget {
+  final String text;
+  final bool isHeader;
+  final bool alignEnd;
+  const _SummaryCell(this.text, {this.isHeader = false, this.alignEnd = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textAlign: alignEnd ? TextAlign.end : TextAlign.start,
+        style: TextStyle(fontWeight: isHeader ? FontWeight.w600 : FontWeight.w400),
+      ),
+    );
   }
 }
 

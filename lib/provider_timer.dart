@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'model_task_record.dart';
 import 'provider_task.dart';
 
@@ -7,6 +8,7 @@ import 'provider_task.dart';
 class TimerNotifier extends StateNotifier<TimerState> {
   final Ref _ref;
   Timer? _timer;
+  final AudioPlayer _completionPlayer = AudioPlayer();
   DateTime? _sessionStart;
 
   TimerNotifier(this._ref) : super(const TimerState(mode: TimerMode.pomodoro));
@@ -153,6 +155,7 @@ class TimerNotifier extends StateNotifier<TimerState> {
 
   void _onComplete() {
     _timer?.cancel();
+    _playCompletionSound();
     final wasBreak = state.isBreak;
 
     if (!wasBreak) {
@@ -177,6 +180,15 @@ class TimerNotifier extends StateNotifier<TimerState> {
     _sessionStart = null;
   }
 
+  Future<void> _playCompletionSound() async {
+    try {
+      await _completionPlayer.stop();
+      await _completionPlayer.play(AssetSource('sounds/InCallNotification.ogg'));
+    } catch (_) {
+      // 音频播放失败不应中断计时状态切换。
+    }
+  }
+
   void _recordTask(int durationSeconds) {
     final title = state.currentTaskName.isNotEmpty
         ? state.currentTaskName
@@ -199,6 +211,7 @@ class TimerNotifier extends StateNotifier<TimerState> {
   @override
   void dispose() {
     _timer?.cancel();
+    _completionPlayer.dispose();
     super.dispose();
   }
 }

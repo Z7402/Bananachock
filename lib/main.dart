@@ -1,4 +1,5 @@
 import "package:flutter/material.dart";
+import "package:flutter/services.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:dynamic_color/dynamic_color.dart";
 import "package:intl/intl.dart";
@@ -9,6 +10,11 @@ import "provider_wallpaper.dart";
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   Intl.defaultLocale = 'zh_CN';
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    systemNavigationBarColor: Colors.transparent,
+  ));
   runApp(const ProviderScope(child: BananachockApp()));
 }
 
@@ -54,6 +60,23 @@ class BananachockApp extends ConsumerWidget {
               : appThemeMode == AppThemeMode.dark
                   ? ThemeMode.dark
                   : ThemeMode.system,
+          builder: (context, child) {
+            final brightness = Theme.of(context).brightness;
+            final iconBrightness = brightness == Brightness.dark
+                ? Brightness.light
+                : Brightness.dark;
+            return AnnotatedRegion<SystemUiOverlayStyle>(
+              value: SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                systemNavigationBarColor: Colors.transparent,
+                statusBarIconBrightness: iconBrightness,
+                statusBarBrightness: brightness,
+                systemNavigationBarIconBrightness: iconBrightness,
+                systemNavigationBarContrastEnforced: false,
+              ),
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
           home: const SplashScreen(),
         );
       },
