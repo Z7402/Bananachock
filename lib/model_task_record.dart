@@ -16,6 +16,23 @@ class TaskRecord {
     required this.duration,
   });
 
+  TaskRecord copyWith({
+    String? title,
+    String? description,
+    String? category,
+    DateTime? date,
+    Duration? duration,
+  }) {
+    return TaskRecord(
+      id: id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      category: category ?? this.category,
+      date: date ?? this.date,
+      duration: duration ?? this.duration,
+    );
+  }
+
   factory TaskRecord.fromJson(Map<String, dynamic> json) {
     return TaskRecord(
       id: json['id'] as String,

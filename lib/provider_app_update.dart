@@ -18,7 +18,7 @@ class AppUpdateState {
 
   const AppUpdateState({
     this.isChecking = false,
-    this.currentVersion = '1.1.6',
+    this.currentVersion = '1.1.7',
     this.latestVersion,
     this.downloadUrl,
     this.releaseUrl,

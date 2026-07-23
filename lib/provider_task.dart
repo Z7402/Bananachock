@@ -15,16 +15,28 @@ class TaskNotifier extends StateNotifier<List<TaskRecord>> {
     _saveToStorage();
   }
 
+  void updateTask(TaskRecord record) {
+    state = [
+      for (final task in state)
+        if (task.id == record.id) record else task,
+    ];
+    _saveToStorage();
+  }
+
   void deleteTask(String id) {
     state = state.where((t) => t.id != id).toList();
     _saveToStorage();
   }
 
   List<TaskRecord> getTasksForDate(DateTime date) {
-    return state.where((t) =>
-        t.date.year == date.year &&
-        t.date.month == date.month &&
-        t.date.day == date.day).toList();
+    return state
+        .where(
+          (t) =>
+              t.date.year == date.year &&
+              t.date.month == date.month &&
+              t.date.day == date.day,
+        )
+        .toList();
   }
 
   Future<void> _loadFromStorage() async {
@@ -33,7 +45,9 @@ class TaskNotifier extends StateNotifier<List<TaskRecord>> {
     if (jsonString != null) {
       try {
         final List<dynamic> jsonList = json.decode(jsonString);
-        state = jsonList.map((e) => TaskRecord.fromJson(e as Map<String, dynamic>)).toList();
+        state = jsonList
+            .map((e) => TaskRecord.fromJson(e as Map<String, dynamic>))
+            .toList();
       } catch (_) {
         // 数据损坏时清空旧记录，下次保存会覆盖
         state = [];
@@ -48,6 +62,8 @@ class TaskNotifier extends StateNotifier<List<TaskRecord>> {
   }
 }
 
-final taskProvider = StateNotifierProvider<TaskNotifier, List<TaskRecord>>((ref) {
+final taskProvider = StateNotifierProvider<TaskNotifier, List<TaskRecord>>((
+  ref,
+) {
   return TaskNotifier();
 });

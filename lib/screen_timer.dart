@@ -6,6 +6,7 @@ import 'provider_timer.dart';
 import 'model_task_record.dart';
 import 'provider_quotes.dart';
 import 'provider_wallpaper.dart';
+import 'service_background_timer.dart';
 
 /// 计时器主页面：包含番茄钟倒计时 / 正向计时器
 /// 集成月夜海浪与柔和动态光影、名言警句
@@ -19,7 +20,7 @@ class TimerScreen extends ConsumerStatefulWidget {
 }
 
 class _TimerScreenState extends ConsumerState<TimerScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late AnimationController _timePulseController;
   late Animation<double> _timePulseAnim;
   final _taskNameController = TextEditingController();
@@ -28,6 +29,10 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    Future.microtask(
+      () => ref.read(timerProvider.notifier).syncFromBackground(),
+    );
     _timePulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -39,10 +44,19 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _restoreSystemUi();
     _timePulseController.dispose();
     _taskNameController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(timerProvider.notifier).syncFromBackground();
+      if (_immersiveFocus) BackgroundTimerService.setImmersive(true);
+    }
   }
 
   static const _immersiveOverlayStyle = SystemUiOverlayStyle(
@@ -58,6 +72,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     if (_immersiveFocus == value) return;
     setState(() => _immersiveFocus = value);
     widget.onImmersiveChanged?.call(value);
+    await BackgroundTimerService.setImmersive(value);
     if (value) {
       // 保持 edge-to-edge 的全屏布局后再隐藏系统栏。部分刘海屏设备直接
       // 进入 immersiveSticky 会恢复黑色状态栏 inset。
@@ -74,6 +89,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   }
 
   Future<void> _restoreSystemUi() async {
+    await BackgroundTimerService.setImmersive(false);
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     await SystemChrome.setPreferredOrientations(DeviceOrientation.values);
   }

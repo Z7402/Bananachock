@@ -134,7 +134,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   }
 }
 
-class _DailyView extends StatelessWidget {
+class _DailyView extends ConsumerWidget {
   final DateTime date;
   final List<TaskRecord> todayTasks;
   final Map<String, Duration> categoryMap;
@@ -151,7 +151,7 @@ class _DailyView extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     final totalMinutes = todayTasks.fold(
       0,
@@ -297,12 +297,75 @@ class _DailyView extends StatelessWidget {
             ...todayTasks.map(
               (task) => _TaskCard(
                 task: task,
+                onEdit: () => _showEditTaskDialog(context, task),
                 onDelete: () => onDeleteTask?.call(task.id),
               ),
             ),
         ],
       ),
     );
+  }
+
+  Future<void> _showEditTaskDialog(
+    BuildContext context,
+    TaskRecord task,
+  ) async {
+    final titleController = TextEditingController(text: task.title);
+    final descriptionController = TextEditingController(text: task.description);
+    final result = await showDialog<(String, String)>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('编辑任务'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: '任务名',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                minLines: 2,
+                maxLines: 5,
+                decoration: const InputDecoration(
+                  labelText: '主要内容（可选）',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final title = titleController.text.trim();
+              if (title.isEmpty) return;
+              Navigator.pop(dialogContext, (
+                title,
+                descriptionController.text.trim(),
+              ));
+            },
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+    titleController.dispose();
+    descriptionController.dispose();
+    if (result == null || !context.mounted) return;
+    ref
+        .read(taskProvider.notifier)
+        .updateTask(task.copyWith(title: result.$1, description: result.$2));
   }
 }
 
@@ -803,8 +866,9 @@ class _SummaryCell extends StatelessWidget {
 
 class _TaskCard extends StatelessWidget {
   final TaskRecord task;
+  final VoidCallback? onEdit;
   final VoidCallback? onDelete;
-  const _TaskCard({required this.task, this.onDelete});
+  const _TaskCard({required this.task, this.onEdit, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -833,6 +897,12 @@ class _TaskCard extends StatelessWidget {
               style: TextStyle(color: cs.primary, fontWeight: FontWeight.w500),
             ),
             const SizedBox(width: 4),
+            IconButton(
+              icon: Icon(Icons.edit_outlined, size: 18, color: cs.primary),
+              onPressed: onEdit,
+              visualDensity: VisualDensity.compact,
+              tooltip: '编辑',
+            ),
             IconButton(
               icon: Icon(
                 Icons.delete_outline,

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'model_task_record.dart';
 import 'provider_task.dart';
+import 'service_background_timer.dart';
 
 /// 计时器状态 Notifier
 class TimerNotifier extends StateNotifier<TimerState> {
@@ -11,7 +12,10 @@ class TimerNotifier extends StateNotifier<TimerState> {
   final AudioPlayer _completionPlayer = AudioPlayer();
   DateTime? _sessionStart;
 
-  TimerNotifier(this._ref) : super(const TimerState(mode: TimerMode.pomodoro));
+  TimerNotifier(this._ref)
+    : super(
+        const TimerState(mode: TimerMode.pomodoro, remainingSeconds: 25 * 60),
+      );
 
   void start() {
     if (state.isRunning) return;
@@ -22,37 +26,33 @@ class TimerNotifier extends StateNotifier<TimerState> {
       _sessionStart = DateTime.now();
     }
 
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (state.mode == TimerMode.pomodoro) {
-        if (state.remainingSeconds <= 0) {
-          _onComplete();
-          return;
-        }
-        state = state.copyWith(remainingSeconds: state.remainingSeconds - 1);
-      } else {
-        state = state.copyWith(remainingSeconds: state.remainingSeconds + 1);
-      }
-    });
     state = state.copyWith(isRunning: true);
+    BackgroundTimerService.start(state);
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
   }
 
   void pause() {
     _timer?.cancel();
+    BackgroundTimerService.pause();
     state = state.copyWith(isRunning: false);
   }
 
   void reset() {
     _timer?.cancel();
+    BackgroundTimerService.stop();
     _sessionStart = null;
     state = state.copyWith(
       isRunning: false,
-      remainingSeconds: state.mode == TimerMode.pomodoro ? state.workSeconds : 0,
+      remainingSeconds: state.mode == TimerMode.pomodoro
+          ? state.workSeconds
+          : 0,
       isBreak: false,
     );
   }
 
   void switchMode(TimerMode mode) {
     _timer?.cancel();
+    BackgroundTimerService.stop();
     _sessionStart = null;
     if (mode == TimerMode.pomodoro) {
       state = TimerState(
@@ -81,7 +81,9 @@ class TimerNotifier extends StateNotifier<TimerState> {
     final total = minutes * 60;
     state = state.copyWith(
       workSeconds: total,
-      remainingSeconds: (!state.isBreak && state.mode == TimerMode.pomodoro) ? total : state.remainingSeconds,
+      remainingSeconds: (!state.isBreak && state.mode == TimerMode.pomodoro)
+          ? total
+          : state.remainingSeconds,
     );
   }
 
@@ -95,25 +97,75 @@ class TimerNotifier extends StateNotifier<TimerState> {
 
   void setCurrentTaskName(String name) {
     state = state.copyWith(currentTaskName: name);
+    if (state.isRunning) BackgroundTimerService.start(state);
+  }
+
+  Future<void> syncFromBackground() async {
+    final snapshot = await BackgroundTimerService.snapshot();
+    if (snapshot == null) return;
+    _applySnapshot(snapshot);
+    if (snapshot.running) {
+      _timer?.cancel();
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+    }
+  }
+
+  Future<void> _tick() async {
+    final snapshot = await BackgroundTimerService.snapshot();
+    if (snapshot != null) {
+      _applySnapshot(snapshot);
+      return;
+    }
+    if (state.mode == TimerMode.pomodoro) {
+      if (state.remainingSeconds <= 0) {
+        _onComplete();
+      } else {
+        state = state.copyWith(remainingSeconds: state.remainingSeconds - 1);
+      }
+    } else {
+      state = state.copyWith(remainingSeconds: state.remainingSeconds + 1);
+    }
+  }
+
+  void _applySnapshot(BackgroundTimerSnapshot snapshot) {
+    for (var i = 0; i < snapshot.pendingFocusSessions; i++) {
+      _recordTask(snapshot.workSeconds, titleOverride: snapshot.taskName);
+    }
+    if (snapshot.pendingFocusSessions > 0) _playCompletionSound();
+    state = TimerState(
+      mode: snapshot.mode,
+      isRunning: snapshot.running,
+      remainingSeconds: snapshot.value,
+      workSeconds: snapshot.workSeconds,
+      breakSeconds: snapshot.breakSeconds,
+      completedPomodoros:
+          state.completedPomodoros + snapshot.pendingFocusSessions,
+      isBreak: snapshot.isBreak,
+      currentTaskName: snapshot.taskName,
+    );
+    if (!snapshot.running) _timer?.cancel();
   }
 
   /// 强行结束当前专注阶段，直接进入休息
   void forceFinishFocus() {
-    if (state.mode != TimerMode.pomodoro || state.isBreak || !state.isRunning) return;
+    if (state.mode != TimerMode.pomodoro || state.isBreak || !state.isRunning)
+      return;
     _timer?.cancel();
+    BackgroundTimerService.stop();
     // 计算已专注时长
     final focusedSeconds = state.workSeconds - state.remainingSeconds;
     if (focusedSeconds > 0) {
       _recordTask(focusedSeconds);
     }
-    // 切换到休息并自动开始
-    _startBreakTimer();
+    // 切换到休息并交给前台服务继续计时。
     state = state.copyWith(
       isRunning: true,
       remainingSeconds: state.breakSeconds,
       isBreak: true,
       completedPomodoros: state.completedPomodoros + 1,
     );
+    BackgroundTimerService.start(state);
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
     _sessionStart = null;
   }
 
@@ -121,6 +173,7 @@ class TimerNotifier extends StateNotifier<TimerState> {
   void stopStopwatch() {
     if (state.mode != TimerMode.stopwatch) return;
     _timer?.cancel();
+    BackgroundTimerService.stop();
     final elapsed = state.remainingSeconds;
     if (elapsed > 0) {
       _recordTask(elapsed);
@@ -145,6 +198,7 @@ class TimerNotifier extends StateNotifier<TimerState> {
   void skipBreak() {
     if (!state.isBreak) return;
     _timer?.cancel();
+    BackgroundTimerService.stop();
     state = state.copyWith(
       isRunning: false,
       remainingSeconds: state.workSeconds,
@@ -183,14 +237,18 @@ class TimerNotifier extends StateNotifier<TimerState> {
   Future<void> _playCompletionSound() async {
     try {
       await _completionPlayer.stop();
-      await _completionPlayer.play(AssetSource('sounds/InCallNotification.ogg'));
+      await _completionPlayer.play(
+        AssetSource('sounds/InCallNotification.ogg'),
+      );
     } catch (_) {
       // 音频播放失败不应中断计时状态切换。
     }
   }
 
-  void _recordTask(int durationSeconds) {
-    final title = state.currentTaskName.isNotEmpty
+  void _recordTask(int durationSeconds, {String? titleOverride}) {
+    final title = titleOverride?.isNotEmpty == true
+        ? (titleOverride ?? '番茄专注')
+        : state.currentTaskName.isNotEmpty
         ? state.currentTaskName
         : (state.mode == TimerMode.pomodoro ? '番茄专注' : '正向计时');
     final now = DateTime.now();
