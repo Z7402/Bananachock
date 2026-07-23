@@ -45,7 +45,7 @@ class MainActivity : FlutterActivity() {
                     result.success(null)
                 }
                 "getTimerState" -> result.success(TimerForegroundService.snapshot(this, call.argument<Boolean>("consume") ?: false))
-                "setImmersive" -> { setImmersive(call.argument<Boolean>("enabled") ?: false); result.success(null) }
+                "setImmersive" -> { applyImmersiveMode(call.argument<Boolean>("enabled") ?: false); result.success(null) }
                 else -> result.notImplemented()
             }
         }
@@ -62,7 +62,7 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun setImmersive(enabled: Boolean) {
+    private fun applyImmersiveMode(enabled: Boolean) {
         prepareEdgeToEdgeWindow()
         WindowInsetsControllerCompat(window, window.decorView).apply {
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
