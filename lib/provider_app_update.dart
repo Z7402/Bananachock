@@ -18,7 +18,7 @@ class AppUpdateState {
 
   const AppUpdateState({
     this.isChecking = false,
-    this.currentVersion = '1.1.7',
+    this.currentVersion = '1.1.7a',
     this.latestVersion,
     this.downloadUrl,
     this.releaseUrl,
@@ -110,8 +110,10 @@ class AppUpdateNotifier extends StateNotifier<AppUpdateState> {
     return launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
-  String? _semanticVersion(String input) =>
-      RegExp(r'^v?(\d+\.\d+\.\d+)$').firstMatch(input.trim())?.group(1);
+  String? _semanticVersion(String input) {
+    final m = RegExp(r'^v?(\d+\.\d+\.\d+)').firstMatch(input.trim());
+    return m?.group(1);
+  }
 
   bool _isNewer(String latest, String current) {
     final a = latest.split('.').map(int.parse).toList();

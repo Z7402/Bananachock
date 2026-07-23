@@ -31,8 +31,8 @@ class _MainScreenState extends State<MainScreen> {
     ];
 
     return Scaffold(
-      extendBody: true,
-      extendBodyBehindAppBar: true,
+      extendBody: _timerImmersive && _selectedIndex == 0,
+      extendBodyBehindAppBar: _timerImmersive && _selectedIndex == 0,
       body: IndexedStack(index: _selectedIndex, children: screens),
       bottomNavigationBar: AnimatedSize(
         duration: const Duration(milliseconds: 320),
