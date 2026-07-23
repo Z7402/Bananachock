@@ -297,7 +297,7 @@ class _DailyView extends ConsumerWidget {
             ...todayTasks.map(
               (task) => _TaskCard(
                 task: task,
-                onEdit: () => _showEditTaskDialog(context, task),
+                onEdit: () => _showEditTaskDialog(context, ref, task),
                 onDelete: () => onDeleteTask?.call(task.id),
               ),
             ),
@@ -308,6 +308,7 @@ class _DailyView extends ConsumerWidget {
 
   Future<void> _showEditTaskDialog(
     BuildContext context,
+    WidgetRef ref,
     TaskRecord task,
   ) async {
     final titleController = TextEditingController(text: task.title);
