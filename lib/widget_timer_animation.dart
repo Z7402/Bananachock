@@ -1,7 +1,9 @@
-import "dart:math";
-import "package:flutter/material.dart";
-import "package:flutter_riverpod/flutter_riverpod.dart";
-import "provider_wallpaper.dart";
+import 'dart:math';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'provider_wallpaper.dart';
 
 class TimerBackgroundAnimation extends ConsumerStatefulWidget {
   final double progress;
@@ -22,38 +24,29 @@ class TimerBackgroundAnimation extends ConsumerStatefulWidget {
 
 class _TimerBackgroundAnimationState
     extends ConsumerState<TimerBackgroundAnimation>
-    with TickerProviderStateMixin {
-  late AnimationController _waveController;
-  late Animation<double> _waveAnim;
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
-    _waveController = AnimationController(
+    _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 4),
+      duration: const Duration(seconds: 10),
     );
-    // 线性相位保证循环首尾速度一致，避免 easeInOut 周期减速造成顿挫。
-    _waveAnim = Tween<double>(begin: 0, end: 2 * pi).animate(_waveController);
-    if (widget.isRunning) {
-      _waveController.repeat();
-    }
+    if (widget.isRunning) _controller.repeat();
   }
 
   @override
   void didUpdateWidget(covariant TimerBackgroundAnimation oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isRunning == oldWidget.isRunning) return;
-    if (widget.isRunning) {
-      _waveController.repeat();
-    } else {
-      _waveController.stop(canceled: false);
-    }
+    widget.isRunning ? _controller.repeat() : _controller.stop(canceled: false);
   }
 
   @override
   void dispose() {
-    _waveController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -61,309 +54,312 @@ class _TimerBackgroundAnimationState
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final wallpaper = ref.watch(wallpaperProvider);
-    final skyTop =
-        wallpaper.hasWallpaper ? wallpaper.mutedAccent : cs.primaryContainer;
-    final skyBottom = wallpaper.hasWallpaper
-        ? (wallpaper.lightMutedColor ?? wallpaper.mutedAccent.withAlpha(100))
-        : cs.surface;
-    final sunColor =
-        wallpaper.hasWallpaper ? wallpaper.primaryAccent : cs.primary;
-
+    final accent = wallpaper.hasWallpaper
+        ? wallpaper.primaryAccent
+        : cs.primary;
+    final top = wallpaper.hasWallpaper
+        ? Color.lerp(wallpaper.mutedAccent, const Color(0xFF10162D), 0.52)!
+        : Color.lerp(cs.primaryContainer, const Color(0xFF10162D), 0.64)!;
+    final bottom = wallpaper.hasWallpaper
+        ? Color.lerp(
+            wallpaper.lightMutedColor ?? wallpaper.mutedAccent,
+            const Color(0xFF29405F),
+            0.44,
+          )!
+        : Color.lerp(
+            cs.surfaceContainerHighest,
+            const Color(0xFF29405F),
+            0.56,
+          )!;
     return AnimatedBuilder(
-      animation: _waveAnim,
-      builder: (context, child) {
-        return SizedBox(
-          width: widget.size,
-          height: widget.size,
-          child: CustomPaint(
-            painter: _SunWavePainter(
-              progress: widget.progress,
-              waveOffset: _waveAnim.value,
-              skyTop: skyTop,
-              skyBottom: skyBottom,
-              sunColor: sunColor,
-            ),
+      animation: _controller,
+      builder: (_, __) => SizedBox.square(
+        dimension: widget.size,
+        child: CustomPaint(
+          painter: _MoonlitWavePainter(
+            progress: widget.progress,
+            phase: _controller.value * 2 * pi,
+            skyTop: top,
+            skyBottom: bottom,
+            accent: accent,
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
 
-class _SunWavePainter extends CustomPainter {
-  final double progress, waveOffset;
-  final Color skyTop, skyBottom, sunColor;
+class _MoonlitWavePainter extends CustomPainter {
+  final double progress, phase;
+  final Color skyTop, skyBottom, accent;
 
-  _SunWavePainter({
+  const _MoonlitWavePainter({
     required this.progress,
-    required this.waveOffset,
+    required this.phase,
     required this.skyTop,
     required this.skyBottom,
-    required this.sunColor,
+    required this.accent,
   });
+
+  Path _wave(
+    Size size,
+    double level,
+    double amplitude,
+    double frequency,
+    double offset,
+  ) {
+    final path = Path()..moveTo(0, level);
+    for (double x = 0; x <= size.width + 2; x += 2) {
+      final t = x / size.width;
+      final y =
+          level +
+          sin(t * frequency * 2 * pi + phase + offset) * amplitude +
+          sin(t * (frequency + 1.35) * 2 * pi - phase * 0.55) *
+              amplitude *
+              0.22;
+      path.lineTo(x, y);
+    }
+    return path
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width, h = size.height, cx = w / 2, cy = h / 2;
+    final w = size.width, h = size.height;
+    final rect = Offset.zero & size;
+    final scene = Path()
+      ..addRRect(RRect.fromRectAndRadius(rect, Radius.circular(w * 0.08)));
+    final value = progress.clamp(0.0, 1.0).toDouble();
+    final breath = 0.5 + 0.5 * sin(phase - pi / 3);
+    final moon = Color.lerp(const Color(0xFFFFF4CE), accent, 0.12)!;
+    final deep = Color.lerp(skyTop, const Color(0xFF061426), 0.66)!;
+    final blue = Color.lerp(accent, const Color(0xFF7CB6D5), 0.48)!;
 
-    // 天空渐变背景
-    final skyRect = Rect.fromLTWH(0, 0, w, h);
-    final skyPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [skyTop, skyBottom],
-      ).createShader(skyRect);
-    final skyRrect =
-        RRect.fromRectAndRadius(skyRect, const Radius.circular(24));
-    final skyPath = Path()..addRRect(skyRrect);
-    canvas.drawPath(skyPath, skyPaint);
+    canvas.save();
+    canvas.clipPath(scene);
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [skyTop, skyBottom, Color.lerp(skyBottom, deep, 0.28)!],
+          stops: const [0, 0.68, 1],
+        ).createShader(rect),
+    );
 
-    final seaLevel = h * 0.62;
-    final phase = waveOffset;
-
-    // ─── 远景海浪：先绘制在太阳背后，建立第一层景深 ───
-    final distantSea = Path()..moveTo(0, seaLevel - h * 0.025);
-    for (double x = 0; x <= w; x += 2) {
-      final nx = x / w;
-      distantSea.lineTo(
-        x,
-        seaLevel -
-            h * 0.025 +
-            sin(nx * 4 * pi + phase) * h * 0.012 +
-            sin(nx * 8 * pi + phase * 2) * h * 0.005,
+    const stars = [
+      Offset(.57, .16),
+      Offset(.72, .24),
+      Offset(.84, .13),
+      Offset(.48, .32),
+      Offset(.90, .37),
+      Offset(.66, .40),
+    ];
+    for (var i = 0; i < stars.length; i++) {
+      final alpha = .17 + .17 * (.5 + .5 * sin(phase * .7 + i * 1.9));
+      canvas.drawCircle(
+        Offset(stars[i].dx * w, stars[i].dy * h),
+        w * (i.isEven ? .0042 : .003),
+        Paint()..color = moon.withValues(alpha: alpha),
       );
     }
-    distantSea
-      ..lineTo(w, h)
-      ..lineTo(0, h)
-      ..close();
-    canvas.save();
-    canvas.clipPath(skyPath);
-    canvas.drawPath(
-      distantSea,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            sunColor.withOpacity(0.16),
-            skyBottom.withOpacity(0.32),
-          ],
-        ).createShader(Rect.fromLTWH(0, seaLevel - 20, w, h - seaLevel + 20)),
-    );
 
-    // ─── 太阳：按画布比例沿弧线移动 ───
-    final safeProgress = progress.clamp(0.0, 1.0).toDouble();
-    final sizeFactor = sin(pi * safeProgress);
-    final sunX = w * (0.12 + 0.76 * safeProgress);
-    final sunY = seaLevel + h * 0.06 - h * 0.48 * sizeFactor;
-    final sunRadius = w * (0.065 + 0.035 * sizeFactor);
-    final sunCenter = Offset(sunX, sunY);
-
-    // 宽幅环境光束：降低对比度并扩大过渡范围，避免硬边。
-    final beamPath = Path()
-      ..moveTo(sunX - sunRadius * 0.7, sunY)
-      ..lineTo(sunX - w * 0.34, seaLevel + h * 0.03)
-      ..lineTo(sunX + w * 0.34, seaLevel + h * 0.03)
-      ..lineTo(sunX + sunRadius * 0.7, sunY)
-      ..close();
-    canvas.drawPath(
-      beamPath,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            sunColor.withOpacity(0),
-            sunColor.withOpacity(0.035 + 0.025 * sizeFactor),
-            sunColor.withOpacity(0.015),
-            sunColor.withOpacity(0),
-          ],
-          stops: const [0, 0.32, 0.7, 1],
-        ).createShader(Rect.fromLTRB(0, sunY, w, seaLevel + h * 0.05)),
-    );
-
-    // 多层低透明度柔光，使用中间色阶消除光晕边界。
-    for (final layer in const [5.2, 3.9, 2.8, 1.9]) {
-      final radius = sunRadius * layer;
-      final alpha = layer == 5.2
-          ? 0.035
-          : layer == 3.9
-              ? 0.055
-              : layer == 2.8
-                  ? 0.075
-                  : 0.10;
+    final moonCenter = Offset(w * .245, h * .255);
+    final moonRadius = w * .086;
+    for (final scale in const [3.8, 2.7, 1.85]) {
+      final radius = moonRadius * scale;
+      final alpha = (.018 + (4.1 - scale) * .018) * (.82 + breath * .18);
       canvas.drawCircle(
-        sunCenter,
+        moonCenter,
         radius,
         Paint()
           ..shader = RadialGradient(
             colors: [
-              sunColor.withOpacity(alpha * (0.75 + sizeFactor * 0.25)),
-              sunColor.withOpacity(alpha * 0.45),
-              sunColor.withOpacity(alpha * 0.12),
-              sunColor.withOpacity(0),
+              moon.withValues(alpha: alpha),
+              moon.withValues(alpha: alpha * .4),
+              moon.withValues(alpha: 0),
             ],
-            stops: const [0, 0.38, 0.72, 1],
-          ).createShader(Rect.fromCircle(center: sunCenter, radius: radius)),
+            stops: const [0, .52, 1],
+          ).createShader(Rect.fromCircle(center: moonCenter, radius: radius)),
+      );
+    }
+    canvas.drawCircle(
+      moonCenter,
+      moonRadius,
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(-.28, -.34),
+          colors: [
+            Colors.white.withValues(alpha: .98),
+            moon.withValues(alpha: .96),
+            Color.lerp(moon, accent, .22)!.withValues(alpha: .88),
+          ],
+          stops: const [0, .62, 1],
+        ).createShader(Rect.fromCircle(center: moonCenter, radius: moonRadius)),
+    );
+    for (final crater in const [
+      (Offset(-.28, -.10), .13),
+      (Offset(.22, .24), .10),
+      (Offset(.16, -.32), .07),
+    ]) {
+      canvas.drawCircle(
+        moonCenter +
+            Offset(crater.$1.dx * moonRadius, crater.$1.dy * moonRadius),
+        moonRadius * crater.$2,
+        Paint()..color = skyBottom.withValues(alpha: .10),
       );
     }
 
-    // 太阳本体保持均匀柔和，不再绘制偏心白色亮斑。
-    final sunBodyPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          sunColor.withOpacity(0.96),
-          sunColor.withOpacity(0.88),
-          sunColor.withOpacity(0.68),
-        ],
-        stops: const [0, 0.68, 1],
-      ).createShader(Rect.fromCircle(center: sunCenter, radius: sunRadius));
-    canvas.drawCircle(sunCenter, sunRadius, sunBodyPaint);
-
-    // 海面碎金反射，会被后续中/前景海浪自然切割遮挡。
-    final reflectionTop = max(sunY + sunRadius * 0.7, seaLevel - 8);
-    final reflectionPath = Path()..moveTo(sunX, reflectionTop);
-    const reflectionSegments = 14;
-    for (var i = 0; i <= reflectionSegments; i++) {
-      final t = i / reflectionSegments;
-      final y = reflectionTop + (h - reflectionTop) * t;
-      final halfWidth = w *
-          (0.018 + t * 0.13) *
-          (0.72 + 0.28 * sin(phase * 2 + i * 1.7).abs());
-      reflectionPath.lineTo(sunX + halfWidth, y);
-    }
-    for (var i = reflectionSegments; i >= 0; i--) {
-      final t = i / reflectionSegments;
-      final y = reflectionTop + (h - reflectionTop) * t;
-      final halfWidth = w *
-          (0.018 + t * 0.13) *
-          (0.72 + 0.28 * sin(phase * 2 + i * 1.7).abs());
-      reflectionPath.lineTo(sunX - halfWidth, y);
-    }
-    reflectionPath.close();
+    final seaLevel = h * .64;
+    final light = Path()
+      ..moveTo(moonCenter.dx - moonRadius * .45, moonCenter.dy + moonRadius)
+      ..lineTo(w * .10, h)
+      ..lineTo(w * .58, h)
+      ..lineTo(moonCenter.dx + moonRadius * .45, moonCenter.dy + moonRadius)
+      ..close();
     canvas.drawPath(
-      reflectionPath,
+      light,
       Paint()
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            sunColor.withOpacity(0.30),
-            sunColor.withOpacity(0.02),
+            moon.withValues(alpha: .055),
+            moon.withValues(alpha: .025 + breath * .018),
+            moon.withValues(alpha: 0),
           ],
-        ).createShader(Rect.fromLTRB(0, reflectionTop, w, h)),
+          stops: const [0, .58, 1],
+        ).createShader(Rect.fromLTRB(0, moonCenter.dy, w, h)),
     );
-    canvas.restore();
 
-    // ─── 中景与前景波浪：绘制在太阳前方，实现出海/入海遮挡 ───
-    final amplitude = h * (0.035 + 0.012 * safeProgress);
-
-    // 主波浪
-    final seaPath = Path()..moveTo(0, seaLevel);
-    for (double x = 0; x <= w; x += 2) {
-      final nx = x / w;
-      final y = seaLevel +
-          sin(nx * 1.8 * 2 * pi + waveOffset) * amplitude +
-          sin(nx * 2.7 * pi * 1.8 + waveOffset * 2) * amplitude * 0.5 +
-          sin(nx * 1.3 * pi * 1.8 + waveOffset * 3) * amplitude * 0.25;
-      seaPath.lineTo(x, y);
-    }
-    seaPath
-      ..lineTo(w, h)
-      ..lineTo(0, h)
-      ..close();
-
-    canvas.save();
-    canvas.clipPath(skyPath);
-
-    final seaPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          sunColor.withOpacity(0.45),
-          sunColor.withOpacity(0.08),
-        ],
-      ).createShader(Rect.fromLTWH(
-        0,
-        seaLevel - amplitude * 2,
-        w,
-        h - seaLevel + amplitude * 2,
-      ));
-    canvas.drawPath(seaPath, seaPaint);
-
-    // 次波浪
-    final seaPath2 = Path()..moveTo(0, seaLevel + 4);
-    for (double x = 0; x <= w; x += 2) {
-      final y = seaLevel +
-          4 +
-          sin(x / w * 2.5 * 2 * pi + waveOffset) * amplitude * 0.4 +
-          sin(x / w * 2 * 2 * pi + waveOffset * 2) * amplitude * 0.3;
-      seaPath2.lineTo(x, y);
-    }
-    seaPath2
-      ..lineTo(w, h)
-      ..lineTo(0, h)
-      ..close();
     canvas.drawPath(
-        seaPath2,
+      _wave(size, seaLevel - h * .018, h * .010, 1.45, pi * .72),
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [blue.withValues(alpha: .25), deep.withValues(alpha: .84)],
+        ).createShader(Rect.fromLTRB(0, seaLevel - h * .05, w, h)),
+    );
+
+    for (var i = 0; i < 12; i++) {
+      final t = i / 11;
+      final y = seaLevel + h * (.018 + t * .31);
+      final center =
+          moonCenter.dx + sin(phase * .75 + i * 1.37) * w * .018 + t * w * .045;
+      final half = w * (.025 + t * .105) * (.72 + .28 * sin(i * 2.2).abs());
+      canvas.drawLine(
+        Offset(center - half, y),
+        Offset(center + half, y),
         Paint()
           ..shader = LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
             colors: [
-              sunColor.withOpacity(0.3),
-              sunColor.withOpacity(0.02),
+              moon.withValues(alpha: 0),
+              moon.withValues(alpha: (.30 - t * .18) * (.86 + breath * .14)),
+              moon.withValues(alpha: 0),
             ],
-          ).createShader(Rect.fromLTWH(
-            0,
-            seaLevel + 4,
-            w,
-            h - seaLevel,
-          )));
-    canvas.restore();
-
-    // ─── 外圈进度环 ───
-    canvas.drawCircle(
-      Offset(cx, cy - 10),
-      w * 0.42,
-      Paint()
-        ..color = Colors.white.withOpacity(0.15)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3,
-    );
-    if (progress > 0.01) {
-      final r = Rect.fromCircle(center: Offset(cx, cy - 10), radius: w * 0.42);
-      canvas.drawArc(
-        r,
-        -pi / 2,
-        2 * pi * progress,
-        false,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3
-          ..strokeCap = StrokeCap.round
-          ..color = sunColor.withOpacity(0.8),
+          ).createShader(Rect.fromLTRB(center - half, y, center + half, y + 1))
+          ..strokeWidth = max(1, w * (.006 - t * .002))
+          ..strokeCap = StrokeCap.round,
       );
     }
 
-    // 边框
     canvas.drawPath(
-      skyPath,
+      _wave(size, seaLevel + h * .018, h * .020, 1.18, 0),
       Paint()
-        ..color = Colors.white.withOpacity(0.12)
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [blue.withValues(alpha: .34), deep.withValues(alpha: .94)],
+          stops: const [0, .72],
+        ).createShader(Rect.fromLTRB(0, seaLevel, w, h)),
+    );
+    final near = _wave(
+      size,
+      seaLevel + h * .09,
+      h * (.025 + value * .004),
+      .92,
+      pi * 1.16,
+    );
+    canvas.drawPath(
+      near,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [accent.withValues(alpha: .20), deep],
+          stops: const [0, .76],
+        ).createShader(Rect.fromLTRB(0, seaLevel, w, h)),
+    );
+    canvas.drawPath(
+      near,
+      Paint()
+        ..color = moon.withValues(alpha: .12 + breath * .035)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
+        ..strokeWidth = 1.1,
+    );
+    canvas.restore();
+
+    final center = Offset(w / 2, h / 2 - h * .03), radius = w * .42;
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..color = moon.withValues(alpha: .075)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2,
+    );
+    if (value > .002) {
+      final arc = Rect.fromCircle(center: center, radius: radius);
+      canvas.drawArc(
+        arc,
+        -pi / 2,
+        2 * pi * value,
+        false,
+        Paint()
+          ..color = moon.withValues(alpha: .16)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 7
+          ..strokeCap = StrokeCap.round
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+      );
+      canvas.drawArc(
+        arc,
+        -pi / 2,
+        2 * pi * value,
+        false,
+        Paint()
+          ..shader = SweepGradient(
+            startAngle: -pi / 2,
+            endAngle: 3 * pi / 2,
+            colors: [
+              moon.withValues(alpha: .42),
+              moon.withValues(alpha: .88),
+              accent.withValues(alpha: .66),
+            ],
+          ).createShader(arc)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.6
+          ..strokeCap = StrokeCap.round,
+      );
+    }
+    canvas.drawPath(
+      scene,
+      Paint()
+        ..color = moon.withValues(alpha: .10)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
     );
   }
 
   @override
-  bool shouldRepaint(covariant _SunWavePainter o) =>
-      progress != o.progress ||
-      waveOffset != o.waveOffset ||
-      skyTop != o.skyTop ||
-      skyBottom != o.skyBottom ||
-      sunColor != o.sunColor;
+  bool shouldRepaint(covariant _MoonlitWavePainter old) =>
+      progress != old.progress ||
+      phase != old.phase ||
+      skyTop != old.skyTop ||
+      skyBottom != old.skyBottom ||
+      accent != old.accent;
 }

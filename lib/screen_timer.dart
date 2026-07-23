@@ -8,7 +8,7 @@ import 'provider_quotes.dart';
 import 'provider_wallpaper.dart';
 
 /// 计时器主页面：包含番茄钟倒计时 / 正向计时器
-/// 集成海浪起伏+太阳东升西落动画、名言警句
+/// 集成月夜海浪与柔和动态光影、名言警句
 class TimerScreen extends ConsumerStatefulWidget {
   final ValueChanged<bool>? onImmersiveChanged;
 
@@ -45,22 +45,29 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     super.dispose();
   }
 
+  static const _immersiveOverlayStyle = SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    systemNavigationBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+    systemNavigationBarIconBrightness: Brightness.light,
+    systemStatusBarContrastEnforced: false,
+    systemNavigationBarContrastEnforced: false,
+  );
+
   Future<void> _setImmersive(bool value) async {
     if (_immersiveFocus == value) return;
     setState(() => _immersiveFocus = value);
     widget.onImmersiveChanged?.call(value);
     if (value) {
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-      SystemChrome.setSystemUIOverlayStyle(
-        const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          systemNavigationBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
-          systemNavigationBarIconBrightness: Brightness.light,
-          systemStatusBarContrastEnforced: false,
-          systemNavigationBarContrastEnforced: false,
-        ),
+      // 保持 edge-to-edge 的全屏布局后再隐藏系统栏。部分刘海屏设备直接
+      // 进入 immersiveSticky 会恢复黑色状态栏 inset。
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      SystemChrome.setSystemUIOverlayStyle(_immersiveOverlayStyle);
+      await SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.manual,
+        overlays: const <SystemUiOverlay>[],
       );
+      SystemChrome.setSystemUIOverlayStyle(_immersiveOverlayStyle);
     } else {
       await _restoreSystemUi();
     }
@@ -94,6 +101,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     }
 
     return Scaffold(
+      extendBody: true,
+      extendBodyBehindAppBar: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
           final landscape = constraints.maxWidth > constraints.maxHeight;

@@ -31,10 +31,9 @@ class _MainScreenState extends State<MainScreen> {
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: screens,
-      ),
+      extendBody: true,
+      extendBodyBehindAppBar: true,
+      body: IndexedStack(index: _selectedIndex, children: screens),
       bottomNavigationBar: AnimatedSize(
         duration: const Duration(milliseconds: 320),
         curve: Curves.easeInOutCubic,
