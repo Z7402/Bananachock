@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'screen_timer.dart';
 import 'screen_statistics.dart';
 import 'screen_settings.dart';
+import 'widget_glass.dart';
 
-/// 主界面：使用 Material 3 NavigationBar 管理三个模块（计时、统计、设置）
+/// 主界面：弥散渐变背景 + 悬浮玻璃底部导航管理三个模块（计时、统计、设置）
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -17,7 +18,6 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final screens = [
       TimerScreen(
         onImmersiveChanged: (value) {
@@ -29,43 +29,50 @@ class _MainScreenState extends State<MainScreen> {
       const StatisticsScreen(),
       const SettingsScreen(),
     ];
+    final hideNav = _timerImmersive && _selectedIndex == 0;
 
     return Scaffold(
-      extendBody: _timerImmersive && _selectedIndex == 0,
-      extendBodyBehindAppBar: _timerImmersive && _selectedIndex == 0,
-      body: IndexedStack(index: _selectedIndex, children: screens),
-      bottomNavigationBar: AnimatedSize(
-        duration: const Duration(milliseconds: 320),
-        curve: Curves.easeInOutCubic,
-        child: _timerImmersive && _selectedIndex == 0
-            ? const SizedBox.shrink()
-            : NavigationBar(
-                selectedIndex: _selectedIndex,
-                onDestinationSelected: (int index) {
-                  setState(() {
-                    _selectedIndex = index;
-                  });
-                },
-                backgroundColor: colorScheme.surface,
-                indicatorColor: colorScheme.secondaryContainer,
-                destinations: const [
-                  NavigationDestination(
-                    icon: Icon(Icons.timer_outlined),
-                    selectedIcon: Icon(Icons.timer),
-                    label: '计时',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.assessment_outlined),
-                    selectedIcon: Icon(Icons.assessment),
-                    label: '统计',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.settings_outlined),
-                    selectedIcon: Icon(Icons.settings),
-                    label: '设置',
-                  ),
-                ],
-              ),
+      extendBody: true,
+      extendBodyBehindAppBar: true,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const MeshBackground(),
+          IndexedStack(index: _selectedIndex, children: screens),
+        ],
+      ),
+      bottomNavigationBar: AnimatedSlide(
+        duration: Glass.springDuration,
+        curve: hideNav ? Curves.easeInCubic : Glass.spring,
+        offset: hideNav ? const Offset(0, 1.6) : Offset.zero,
+        child: AnimatedOpacity(
+          duration: Glass.quickDuration,
+          opacity: hideNav ? 0 : 1,
+          child: IgnorePointer(
+            ignoring: hideNav,
+            child: GlassNavBar(
+              selectedIndex: _selectedIndex,
+              onSelected: (index) => setState(() => _selectedIndex = index),
+              destinations: const [
+                GlassNavDestination(
+                  icon: Icons.timer_outlined,
+                  selectedIcon: Icons.timer,
+                  label: '计时',
+                ),
+                GlassNavDestination(
+                  icon: Icons.assessment_outlined,
+                  selectedIcon: Icons.assessment,
+                  label: '统计',
+                ),
+                GlassNavDestination(
+                  icon: Icons.settings_outlined,
+                  selectedIcon: Icons.settings,
+                  label: '设置',
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

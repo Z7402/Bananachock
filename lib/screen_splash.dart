@@ -1,5 +1,6 @@
 import "package:flutter/material.dart";
 import "screen_main.dart";
+import "widget_glass.dart";
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -69,7 +70,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       builder: (context, child) {
         return Scaffold(
           backgroundColor: colorScheme.surface,
-          body: Center(
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              const MeshBackground(),
+              Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -127,6 +132,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5))),
               ],
             ),
+          ),
+            ],
           ),
         );
       },

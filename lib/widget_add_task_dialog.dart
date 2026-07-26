@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'widget_glass.dart';
 
 class AddTaskDialog extends StatefulWidget {
   final void Function(
@@ -30,7 +31,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return GlassDialog(
       title: const Text('记录任务'),
       content: SingleChildScrollView(
         child: Column(
@@ -38,26 +39,18 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
           children: [
             TextField(
               controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: '任务名称',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: '任务名称'),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: '任务细节描述（可选）',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: '任务细节描述（可选）'),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _selectedCategory,
-              decoration: const InputDecoration(
-                labelText: '分类',
-                border: OutlineInputBorder(),
-              ),
+              initialValue: _selectedCategory,
+              borderRadius: BorderRadius.circular(14),
+              decoration: const InputDecoration(labelText: '分类'),
               items: categories
                   .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                   .toList(),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'widget_glass.dart';
 import 'widget_timer_animation.dart';
 import 'provider_timer.dart';
 import 'model_task_record.dart';
@@ -126,16 +127,15 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
               ? (landscape
                     ? const Alignment(-0.48, -0.05)
                     : const Alignment(0, -0.30))
-              : const Alignment(0, -0.16);
+              : const Alignment(0, -0.22);
           final buttonAlignment = _immersiveFocus
               ? (landscape
                     ? const Alignment(0.56, 0.08)
                     : const Alignment(0, 0.50))
-              : const Alignment(0, 0.28);
+              : const Alignment(0, 0.22);
           return Stack(
             fit: StackFit.expand,
             children: [
-              ColoredBox(color: cs.surface),
               _buildWallpaperBackground(),
               SafeArea(
                 child: AnimatedOpacity(
@@ -235,7 +235,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                   letterSpacing: 6,
                   color: cs.onSurface,
                   shadows: [
-                    Shadow(color: cs.primary.withOpacity(0.24), blurRadius: 24),
+                    Shadow(color: cs.primary.withValues(alpha: 0.24), blurRadius: 24),
                   ],
                 ),
               ),
@@ -247,24 +247,49 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   }
 
   Widget _buildSharedPrimaryButton(ColorScheme cs, TimerState timerState) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 620),
-      width: _immersiveFocus ? 66 : 72,
-      height: _immersiveFocus ? 66 : 72,
-      child: FloatingActionButton(
-        heroTag: 'shared_timer_primary',
-        onPressed: () {
-          final notifier = ref.read(timerProvider.notifier);
-          if (timerState.isRunning) {
-            notifier.pause();
-          } else {
-            notifier.start();
-            if (timerState.mode == TimerMode.pomodoro && !timerState.isBreak) {
-              _setImmersive(true);
-            }
+    final size = _immersiveFocus ? 66.0 : 72.0;
+    final accent = timerState.isRunning ? cs.secondary : cs.primary;
+    return GlassPressable(
+      onTap: () {
+        final notifier = ref.read(timerProvider.notifier);
+        if (timerState.isRunning) {
+          notifier.pause();
+        } else {
+          notifier.start();
+          if (timerState.mode == TimerMode.pomodoro && !timerState.isBreak) {
+            _setImmersive(true);
           }
-        },
-        backgroundColor: timerState.isRunning ? cs.secondary : cs.primary,
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 620),
+        curve: Glass.spring,
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color.lerp(accent, Colors.white, 0.18)!, accent],
+          ),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.35),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: 0.30),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+            BoxShadow(
+              color: accent.withValues(alpha: 0.24),
+              blurRadius: 28,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
           child: Icon(
@@ -281,8 +306,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   }
 
   Widget _buildNormalOptions(ColorScheme cs, TimerState timerState) {
+    // 底部预留悬浮玻璃导航栏的高度
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 14),
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 96),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -299,7 +325,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                     borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
-                  fillColor: cs.surfaceContainerLow.withOpacity(0.72),
+                  fillColor: cs.surfaceContainerLow.withValues(alpha: 0.72),
                 ),
                 onChanged: (value) => ref
                     .read(timerProvider.notifier)
@@ -450,43 +476,59 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     VoidCallback onTap, {
     bool immersive = false,
   }) {
-    final bgOpacity = immersive ? 0.08 : 0.6;
-    return GestureDetector(
+    // 沉浸模式下几乎透明，避免遮挡月夜场景。
+    if (immersive) {
+      return GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerLow.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: _buildQuoteText(cs, quote),
+        ),
+      );
+    }
+    return GlassPressable(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerLow.withOpacity(bgOpacity),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              quote.text,
-              style: TextStyle(
-                fontSize: 12,
-                color: cs.onSurface.withOpacity(0.75),
-                height: 1.4,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (quote.author.isNotEmpty) ...[
-              const SizedBox(height: 2),
-              Text(
-                '\u2014\u2014 ${quote.author}',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: cs.onSurfaceVariant.withOpacity(0.5),
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ],
-          ],
-        ),
+      pressedScale: 0.98,
+      haptic: false,
+      child: LiquidGlass(
+        radius: 16,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: _buildQuoteText(cs, quote),
       ),
+    );
+  }
+
+  Widget _buildQuoteText(ColorScheme cs, QuoteState quote) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          quote.text,
+          style: TextStyle(
+            fontSize: 12,
+            color: cs.onSurface.withValues(alpha: 0.85),
+            height: 1.4,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        if (quote.author.isNotEmpty) ...[
+          const SizedBox(height: 2),
+          Text(
+            '\u2014\u2014 ${quote.author}',
+            style: TextStyle(
+              fontSize: 10,
+              color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -496,28 +538,41 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
       child: Row(
         children: [
           // 模式切换直接靠左，Quote 由浮动层独立控制
-          SegmentedButton<TimerMode>(
-            segments: const [
-              ButtonSegment(
-                value: TimerMode.pomodoro,
-                label: Text('番茄', style: TextStyle(fontSize: 11)),
-                icon: Icon(Icons.timer, size: 16),
-              ),
-              ButtonSegment(
-                value: TimerMode.stopwatch,
-                label: Text('正向', style: TextStyle(fontSize: 11)),
-                icon: Icon(Icons.trending_up, size: 16),
-              ),
-            ],
-            selected: {timerState.mode},
-            onSelectionChanged: (Set<TimerMode> newSelection) {
-              ref.read(timerProvider.notifier).switchMode(newSelection.first);
-            },
-            style: ButtonStyle(
-              visualDensity: VisualDensity.compact,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              shape: WidgetStatePropertyAll(
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          LiquidGlass(
+            radius: 14,
+            padding: const EdgeInsets.all(2),
+            child: SegmentedButton<TimerMode>(
+              segments: const [
+                ButtonSegment(
+                  value: TimerMode.pomodoro,
+                  label: Text('番茄', style: TextStyle(fontSize: 11)),
+                  icon: Icon(Icons.timer, size: 16),
+                ),
+                ButtonSegment(
+                  value: TimerMode.stopwatch,
+                  label: Text('正向', style: TextStyle(fontSize: 11)),
+                  icon: Icon(Icons.trending_up, size: 16),
+                ),
+              ],
+              selected: {timerState.mode},
+              onSelectionChanged: (Set<TimerMode> newSelection) {
+                HapticFeedback.selectionClick();
+                ref.read(timerProvider.notifier).switchMode(newSelection.first);
+              },
+              style: ButtonStyle(
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                backgroundColor: WidgetStateProperty.resolveWith(
+                  (states) => states.contains(WidgetState.selected)
+                      ? cs.primary.withValues(alpha: 0.20)
+                      : Colors.transparent,
+                ),
+                side: const WidgetStatePropertyAll(BorderSide.none),
+                shape: WidgetStatePropertyAll(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
             ),
           ),
@@ -618,13 +673,21 @@ class _DurationRowState extends State<_DurationRow> {
                       ),
                     ),
                     onPressed: () {
+                      HapticFeedback.selectionClick();
                       _isCustom = false;
                       widget.onChanged(m);
                     },
                     backgroundColor: active
                         ? cs.primaryContainer
-                        : cs.surfaceContainerLow,
-                    side: BorderSide.none,
+                        : cs.surfaceContainerLow.withValues(alpha: 0.55),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      side: BorderSide(
+                        color: active
+                            ? cs.primary.withValues(alpha: 0.35)
+                            : Colors.white.withValues(alpha: 0.18),
+                      ),
+                    ),
                     visualDensity: VisualDensity.compact,
                   ),
                 );
@@ -645,14 +708,14 @@ class _DurationRowState extends State<_DurationRow> {
                     hintText: '自定义',
                     hintStyle: TextStyle(
                       fontSize: 10,
-                      color: cs.onSurfaceVariant.withOpacity(0.4),
+                      color: cs.onSurfaceVariant.withValues(alpha: 0.4),
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                     filled: true,
                     fillColor: _isCustom
-                        ? cs.primaryContainer.withOpacity(0.3)
+                        ? cs.primaryContainer.withValues(alpha: 0.3)
                         : cs.surfaceContainerLow,
                   ),
                   style: TextStyle(fontSize: 12, color: cs.onSurface),

@@ -4,6 +4,10 @@ import 'package:fl_chart/fl_chart.dart';
 import 'provider_task.dart';
 import 'model_task_record.dart';
 import 'widget_add_task_dialog.dart';
+import 'widget_glass.dart';
+
+/// 底部悬浮玻璃导航栏高度补偿，保证列表可完整滚动到底。
+const double _kNavBarClearance = 104;
 
 class StatisticsScreen extends ConsumerStatefulWidget {
   const StatisticsScreen({super.key});
@@ -50,10 +54,15 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverAppBar(
-            title: const Text('统计'),
+            title: const Text(
+              '统计',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
             centerTitle: true,
             floating: true,
             pinned: true,
+            backgroundColor: Colors.transparent,
+            flexibleSpace: const GlassAppBarFill(),
             actions: [
               IconButton(
                 icon: const Icon(Icons.add_circle_outline),
@@ -63,6 +72,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
             ],
             bottom: TabBar(
               controller: _tabController,
+              dividerColor: Colors.transparent,
               tabs: const [
                 Tab(text: '日'),
                 Tab(text: '周'),
@@ -83,9 +93,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
               onDeleteTask: (id) {
                 final task = taskList.where((t) => t.id == id).firstOrNull;
                 if (task != null) {
-                  showDialog(
+                  showGlassDialog(
                     context: context,
-                    builder: (ctx) => AlertDialog(
+                    builder: (ctx) => GlassDialog(
                       title: const Text('删除任务'),
                       content: Text('确定删除「${task.title}」？'),
                       actions: [
@@ -115,7 +125,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   }
 
   void _showAddTaskDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
+    showGlassDialog(
       context: context,
       builder: (_) => AddTaskDialog(
         onAdd: (title, description, category, duration) {
@@ -166,52 +176,47 @@ class _DailyView extends ConsumerWidget {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, _kNavBarClearance),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _DateSelector(selectedDate: date, onDateChanged: onDateChanged),
           const SizedBox(height: 16),
-          // 日总计卡片
-          Container(
-            width: double.infinity,
+          // 日总计玻璃卡片
+          LiquidGlass(
+            tint: cs.primary,
+            shadow: true,
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  cs.primaryContainer,
-                  cs.primaryContainer.withValues(alpha: 0.3),
+            child: SizedBox(
+              width: double.infinity,
+              child: Column(
+                children: [
+                  Text(
+                    '今日专注',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: cs.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${(totalMinutes / 60).toStringAsFixed(1)} h',
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w700,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '共 ${todayTasks.length} 个任务',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: cs.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  '今日专注',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: cs.onPrimaryContainer.withValues(alpha: 0.7),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${(totalMinutes / 60).toStringAsFixed(1)} h',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w700,
-                    color: cs.onPrimaryContainer,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '共 ${todayTasks.length} 个任务',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: cs.onPrimaryContainer.withValues(alpha: 0.6),
-                  ),
-                ),
-              ],
             ),
           ),
           const SizedBox(height: 20),
@@ -239,26 +244,22 @@ class _DailyView extends ConsumerWidget {
               ),
             )
           else
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: cs.outlineVariant),
-              ),
-              clipBehavior: Clip.antiAlias,
+            LiquidGlass(
+              radius: 18,
               child: Table(
                 columnWidths: const {
                   0: FlexColumnWidth(2),
                   1: FlexColumnWidth(1),
                 },
                 border: TableBorder(
-                  horizontalInside: BorderSide(color: cs.outlineVariant),
+                  horizontalInside: BorderSide(
+                    color: cs.outlineVariant.withValues(alpha: 0.4),
+                  ),
                 ),
                 children: [
                   TableRow(
                     decoration: BoxDecoration(
-                      color: cs.surfaceContainerHighest,
+                      color: cs.primary.withValues(alpha: 0.10),
                     ),
                     children: const [
                       _SummaryCell('任务名', isHeader: true),
@@ -313,9 +314,9 @@ class _DailyView extends ConsumerWidget {
   ) async {
     final titleController = TextEditingController(text: task.title);
     final descriptionController = TextEditingController(text: task.description);
-    final result = await showDialog<(String, String)>(
+    final result = await showGlassDialog<(String, String)>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => GlassDialog(
         title: const Text('编辑任务'),
         content: SingleChildScrollView(
           child: Column(
@@ -324,20 +325,14 @@ class _DailyView extends ConsumerWidget {
               TextField(
                 controller: titleController,
                 autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: '任务名',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: '任务名'),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: descriptionController,
                 minLines: 2,
                 maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: '主要内容（可选）',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: '主要内容（可选）'),
               ),
             ],
           ),
@@ -396,40 +391,35 @@ class _WeeklyView extends StatelessWidget {
     final totalWeek = dailyHours.fold(0.0, (a, b) => a + b);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, _kNavBarClearance),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: double.infinity,
+          LiquidGlass(
+            tint: cs.secondary,
+            shadow: true,
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  cs.secondaryContainer,
-                  cs.secondaryContainer.withValues(alpha: 0.3),
+            child: SizedBox(
+              width: double.infinity,
+              child: Column(
+                children: [
+                  Text(
+                    '本周总计',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: cs.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  Text(
+                    '${totalWeek.toStringAsFixed(1)} h',
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w700,
+                      color: cs.onSurface,
+                    ),
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  '本周总计',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: cs.onSecondaryContainer.withValues(alpha: 0.7),
-                  ),
-                ),
-                Text(
-                  '${totalWeek.toStringAsFixed(1)} h',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w700,
-                    color: cs.onSecondaryContainer,
-                  ),
-                ),
-              ],
             ),
           ),
           const SizedBox(height: 20),
@@ -455,20 +445,25 @@ class _WeeklyView extends StatelessWidget {
             final weekDays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
             final dayLabel =
                 '${date.month}/${date.day} ${weekDays[date.weekday - 1]}';
-            return Card(
-              color: cs.surfaceContainerLow,
-              margin: const EdgeInsets.only(bottom: 6),
-              child: ExpansionTile(
-                title: Text('$dayLabel  ${hours.toStringAsFixed(1)}h'),
-                children: tasks
-                    .map(
-                      (t) => ListTile(
-                        title: Text(t.title),
-                        subtitle: Text(t.category),
-                        trailing: Text('${t.duration.inMinutes}min'),
-                      ),
-                    )
-                    .toList(),
+            return LiquidGlass(
+              radius: 18,
+              margin: const EdgeInsets.only(bottom: 8),
+              child: Material(
+                type: MaterialType.transparency,
+                child: ExpansionTile(
+                  shape: const Border(),
+                  collapsedShape: const Border(),
+                  title: Text('$dayLabel  ${hours.toStringAsFixed(1)}h'),
+                  children: tasks
+                      .map(
+                        (t) => ListTile(
+                          title: Text(t.title),
+                          subtitle: Text(t.category),
+                          trailing: Text('${t.duration.inMinutes}min'),
+                        ),
+                      )
+                      .toList(),
+                ),
               ),
             );
           }),
@@ -504,40 +499,35 @@ class _MonthlyView extends StatelessWidget {
         : (dailyHours.reduce((a, b) => a > b ? a : b) * 1.3).clamp(2.0, 16.0);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, _kNavBarClearance),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: double.infinity,
+          LiquidGlass(
+            tint: cs.tertiary,
+            shadow: true,
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  cs.tertiaryContainer,
-                  cs.tertiaryContainer.withValues(alpha: 0.3),
+            child: SizedBox(
+              width: double.infinity,
+              child: Column(
+                children: [
+                  Text(
+                    '${now.month}月总计',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: cs.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  Text(
+                    '${totalMonth.toStringAsFixed(1)} h',
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w700,
+                      color: cs.onSurface,
+                    ),
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  '${now.month}月总计',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: cs.onTertiaryContainer.withValues(alpha: 0.7),
-                  ),
-                ),
-                Text(
-                  '${totalMonth.toStringAsFixed(1)} h',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w700,
-                    color: cs.onTertiaryContainer,
-                  ),
-                ),
-              ],
             ),
           ),
           const SizedBox(height: 20),
@@ -877,11 +867,9 @@ class _TaskCard extends StatelessWidget {
     final hours = task.duration.inHours;
     final minutes = task.duration.inMinutes % 60;
     final durationStr = hours > 0 ? '${hours}h ${minutes}min' : '$minutes min';
-    return Card(
-      elevation: 0,
-      color: cs.surfaceContainerLow,
+    return LiquidGlass(
+      radius: 18,
       margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         title: Text('任务：${task.title}'),
         subtitle: Text(

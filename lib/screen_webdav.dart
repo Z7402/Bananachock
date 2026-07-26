@@ -5,6 +5,7 @@ import 'provider_task.dart';
 import 'provider_theme.dart';
 import 'provider_wallpaper.dart';
 import 'provider_webdav.dart';
+import 'widget_glass.dart';
 
 class WebDavScreen extends ConsumerStatefulWidget {
   const WebDavScreen({super.key});
@@ -54,9 +55,10 @@ class _WebDavScreenState extends ConsumerState<WebDavScreen> {
   }
 
   Future<void> _restore() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showGlassDialog<bool>(
           context: context,
-          builder: (context) => AlertDialog(
+          builder: (context) => GlassDialog(
+            icon: const Icon(Icons.cloud_download_outlined),
             title: const Text('从云端恢复？'),
             content: const Text('云端备份将覆盖本机现有配置与记录。建议先备份当前数据。'),
             actions: [
@@ -95,14 +97,29 @@ class _WebDavScreenState extends ConsumerState<WebDavScreen> {
     _fill(state);
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('WebDAV 云备份')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: const Text(
+          'WebDAV 云备份',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        flexibleSpace: const GlassAppBarFill(),
+      ),
+      body: Stack(
+        fit: StackFit.expand,
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
+          const MeshBackground(),
+          ListView(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          MediaQuery.paddingOf(context).top + kToolbarHeight + 12,
+          16,
+          MediaQuery.paddingOf(context).bottom + 24,
+        ),
+        children: [
+          LiquidGlass(
+            padding: const EdgeInsets.all(16),
+            child: Column(
                 children: [
                   TextField(
                     controller: _url,
@@ -163,28 +180,29 @@ class _WebDavScreenState extends ConsumerState<WebDavScreen> {
                   ),
                 ],
               ),
-            ),
           ),
           if (state.message != null) ...[
             const SizedBox(height: 12),
-            Material(
-              color: state.isError ? cs.errorContainer : cs.primaryContainer,
-              borderRadius: BorderRadius.circular(14),
+            LiquidGlass(
+              radius: 18,
+              tint: state.isError ? cs.error : cs.primary,
               child: ListTile(
                 leading: state.loading
                     ? const CircularProgressIndicator()
-                    : Icon(state.isError
-                        ? Icons.error_outline
-                        : Icons.check_circle_outline),
+                    : Icon(
+                        state.isError
+                            ? Icons.error_outline
+                            : Icons.check_circle_outline,
+                        color: state.isError ? cs.error : cs.primary,
+                      ),
                 title: Text(state.message!),
               ),
             ),
           ],
           const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
+          LiquidGlass(
+            padding: const EdgeInsets.all(16),
+            child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('数据同步', style: Theme.of(context).textTheme.titleMedium),
@@ -219,12 +237,13 @@ class _WebDavScreenState extends ConsumerState<WebDavScreen> {
                   ),
                 ],
               ),
-            ),
           ),
           const SizedBox(height: 12),
           Text(
             '备份覆盖任务记录、主题、壁纸及应用使用的其他本地配置；WebDAV 凭据存储于系统加密存储中，不写入备份文件。',
             style: TextStyle(color: cs.onSurfaceVariant, height: 1.5),
+          ),
+            ],
           ),
         ],
       ),

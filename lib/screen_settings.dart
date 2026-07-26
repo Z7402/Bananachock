@@ -1,10 +1,12 @@
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:url_launcher/url_launcher.dart";
+import "provider_glass.dart";
 import "provider_theme.dart";
 import "provider_wallpaper.dart";
 import "provider_app_update.dart";
 import "screen_webdav.dart";
+import "widget_glass.dart";
 import "widget_theme_picker.dart";
 
 class SettingsScreen extends ConsumerWidget {
@@ -14,11 +16,25 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeProvider);
     final wallpaper = ref.watch(wallpaperProvider);
+    final glassEnabled = ref.watch(glassEffectsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text("设置"), centerTitle: true),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: const Text(
+          "设置",
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        centerTitle: true,
+        flexibleSpace: const GlassAppBarFill(),
+      ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          MediaQuery.paddingOf(context).top + kToolbarHeight + 12,
+          16,
+          104,
+        ),
         children: [
           _Section(
             title: "个性化",
@@ -55,6 +71,26 @@ class SettingsScreen extends ConsumerWidget {
                   },
                 ),
               ],
+              SwitchListTile(
+                secondary: Icon(
+                  Icons.blur_on_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                title: const Text("液态玻璃效果"),
+                subtitle: Text(
+                  "背景模糊与玻璃质感，低性能设备可关闭",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                value: glassEnabled,
+                onChanged: (v) =>
+                    ref.read(glassEffectsProvider.notifier).setEnabled(v),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -92,7 +128,7 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: "将任务数据与壁纸配置同步到云存储",
                 onTap: () => Navigator.of(
                   context,
-                ).push(MaterialPageRoute(builder: (_) => const WebDavScreen())),
+                ).push(GlassPageRoute(builder: (_) => const WebDavScreen())),
               ),
             ],
           ),
@@ -118,7 +154,7 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: "v1.1.7a | 作者、项目与技术支持",
                 onTap: () => Navigator.of(
                   context,
-                ).push(MaterialPageRoute(builder: (_) => const _AboutScreen())),
+                ).push(GlassPageRoute(builder: (_) => const _AboutScreen())),
               ),
             ],
           ),
@@ -136,9 +172,16 @@ class SettingsScreen extends ConsumerWidget {
     final result = await ref.read(appUpdateProvider.notifier).checkForUpdate();
     if (!context.mounted) return;
     Navigator.of(context).pop();
-    await showDialog<void>(
+    await showGlassDialog<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => GlassDialog(
+        icon: Icon(
+          result.error != null
+              ? Icons.error_outline_rounded
+              : result.updateAvailable
+              ? Icons.rocket_launch_rounded
+              : Icons.check_circle_outline_rounded,
+        ),
         title: Text(
           result.error != null
               ? "检查更新失败"
@@ -203,7 +246,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showThemePicker(BuildContext context, WidgetRef ref) {
-    showDialog(
+    showGlassDialog(
       context: context,
       builder: (_) => ThemePickerDialog(
         currentMode: ref.read(themeProvider),
@@ -242,17 +285,48 @@ class _AboutScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text("关于"), centerTitle: true),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: const Text("关于", style: TextStyle(fontWeight: FontWeight.w700)),
+        centerTitle: true,
+        flexibleSpace: const GlassAppBarFill(),
+      ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const MeshBackground(),
+          ListView(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          MediaQuery.paddingOf(context).top + kToolbarHeight + 16,
+          20,
+          MediaQuery.paddingOf(context).bottom + 32,
+        ),
         children: [
           Center(
             child: Container(
               width: 88,
               height: 88,
               decoration: BoxDecoration(
-                color: cs.primaryContainer,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color.lerp(cs.primaryContainer, Colors.white, 0.2)!,
+                    cs.primaryContainer,
+                  ],
+                ),
                 borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.4),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: cs.primary.withValues(alpha: 0.25),
+                    blurRadius: 28,
+                    offset: const Offset(0, 12),
+                  ),
+                ],
               ),
               child: Icon(
                 Icons.timer_rounded,
@@ -336,6 +410,8 @@ class _AboutScreen extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
           ),
+            ],
+          ),
         ],
       ),
     );
@@ -366,16 +442,7 @@ class _AboutCard extends StatelessWidget {
             ),
           ),
         ),
-        Card(
-          margin: EdgeInsets.zero,
-          elevation: 0,
-          color: cs.surfaceContainerLow,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(children: children),
-        ),
+        LiquidGlass(child: Column(children: children)),
       ],
     );
   }
@@ -404,14 +471,7 @@ class _Section extends StatelessWidget {
             ),
           ),
         ),
-        Card(
-          elevation: 0,
-          color: cs.surfaceContainerLow,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(children: items),
-        ),
+        LiquidGlass(child: Column(children: items)),
       ],
     );
   }
