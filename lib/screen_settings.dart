@@ -139,7 +139,7 @@ class SettingsScreen extends ConsumerWidget {
               _Item(
                 icon: Icons.system_update_rounded,
                 title: "检查更新",
-                subtitle: "当前版本 v1.1.7a · 手动检查 GitHub Release",
+                subtitle: "当前版本 v1.2.0 · 手动检查 GitHub Release",
                 onTap: () => _checkUpdate(context, ref),
               ),
             ],
@@ -151,7 +151,7 @@ class SettingsScreen extends ConsumerWidget {
               _Item(
                 icon: Icons.info_outline,
                 title: "关于 Bananachock",
-                subtitle: "v1.1.7a | 作者、项目与技术支持",
+                subtitle: "v1.2.0 | 作者、项目与技术支持",
                 onTap: () => Navigator.of(
                   context,
                 ).push(GlassPageRoute(builder: (_) => const _AboutScreen())),
@@ -343,7 +343,7 @@ class _AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            "v1.1.7a",
+            "v1.2.0",
             textAlign: TextAlign.center,
             style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600),
           ),

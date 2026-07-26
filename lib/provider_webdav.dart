@@ -150,7 +150,7 @@ class WebDavNotifier extends StateNotifier<WebDavState> {
         jsonEncode({
           'format': 'bananachock-backup',
           'schemaVersion': 1,
-          'appVersion': '1.1.7a',
+          'appVersion': '1.2.0',
           'createdAt': DateTime.now().toUtc().toIso8601String(),
           'preferences': values,
         }),

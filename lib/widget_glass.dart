@@ -89,7 +89,9 @@ class LiquidGlass extends ConsumerWidget {
           stops: const [0, 0.55],
         ),
       ),
-      child: child,
+      // 透明 Material 让 ListTile 等 Material 组件的墨水效果绘制在玻璃之上，
+      // 也避免新版 Flutter "ink splashes may be invisible" 断言。
+      child: Material(type: MaterialType.transparency, child: child),
     );
     if (blurOn) {
       panel = BackdropFilter(
