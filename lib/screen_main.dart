@@ -41,38 +41,34 @@ class _MainScreenState extends State<MainScreen> {
           IndexedStack(index: _selectedIndex, children: screens),
         ],
       ),
-      bottomNavigationBar: AnimatedSlide(
-        duration: Glass.springDuration,
-        curve: hideNav ? Curves.easeInCubic : Glass.spring,
-        offset: hideNav ? const Offset(0, 1.6) : Offset.zero,
-        child: AnimatedOpacity(
-          duration: Glass.quickDuration,
-          opacity: hideNav ? 0 : 1,
-          child: IgnorePointer(
-            ignoring: hideNav,
-            child: GlassNavBar(
-              selectedIndex: _selectedIndex,
-              onSelected: (index) => setState(() => _selectedIndex = index),
-              destinations: const [
-                GlassNavDestination(
-                  icon: Icons.timer_outlined,
-                  selectedIcon: Icons.timer,
-                  label: '计时',
-                ),
-                GlassNavDestination(
-                  icon: Icons.assessment_outlined,
-                  selectedIcon: Icons.assessment,
-                  label: '统计',
-                ),
-                GlassNavDestination(
-                  icon: Icons.settings_outlined,
-                  selectedIcon: Icons.settings,
-                  label: '设置',
-                ),
-              ],
-            ),
-          ),
-        ),
+      // 沉浸模式下导航栏高度归零，body 底部 inset 随之消失，
+      // 保证沉浸布局与全屏对齐（滑出方式会残留布局高度导致控件重叠）。
+      bottomNavigationBar: AnimatedSize(
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeInOutCubic,
+        child: hideNav
+            ? const SizedBox.shrink()
+            : GlassNavBar(
+                selectedIndex: _selectedIndex,
+                onSelected: (index) => setState(() => _selectedIndex = index),
+                destinations: const [
+                  GlassNavDestination(
+                    icon: Icons.timer_outlined,
+                    selectedIcon: Icons.timer,
+                    label: '计时',
+                  ),
+                  GlassNavDestination(
+                    icon: Icons.assessment_outlined,
+                    selectedIcon: Icons.assessment,
+                    label: '统计',
+                  ),
+                  GlassNavDestination(
+                    icon: Icons.settings_outlined,
+                    selectedIcon: Icons.settings,
+                    label: '设置',
+                  ),
+                ],
+              ),
       ),
     );
   }

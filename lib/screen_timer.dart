@@ -125,14 +125,17 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
           final landscape = constraints.maxWidth > constraints.maxHeight;
           final visualAlignment = _immersiveFocus
               ? (landscape
-                    ? const Alignment(-0.48, -0.05)
-                    : const Alignment(0, -0.30))
-              : const Alignment(0, -0.22);
+                  ? const Alignment(-0.48, -0.05)
+                  : const Alignment(0, -0.30))
+              : const Alignment(0, -0.16);
           final buttonAlignment = _immersiveFocus
               ? (landscape
-                    ? const Alignment(0.56, 0.08)
-                    : const Alignment(0, 0.50))
-              : const Alignment(0, 0.22);
+                  ? const Alignment(0.56, 0.08)
+                  : const Alignment(0, 0.50))
+              : const Alignment(0, 0.28);
+          // 普通模式下 body 含底部导航 inset（extendBody），补偿后与旧版
+          // “body 高度不含导航栏”的对齐几何一致；沉浸模式 inset 归零全屏。
+          final bottomInset = MediaQuery.paddingOf(context).bottom;
           return Stack(
             fit: StackFit.expand,
             children: [
@@ -150,22 +153,28 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                   ),
                 ),
               ),
-              AnimatedAlign(
-                duration: const Duration(milliseconds: 620),
-                curve: Curves.easeInOutCubicEmphasized,
-                alignment: visualAlignment,
-                child: AnimatedScale(
+              Padding(
+                padding: EdgeInsets.only(bottom: bottomInset),
+                child: AnimatedAlign(
                   duration: const Duration(milliseconds: 620),
                   curve: Curves.easeInOutCubicEmphasized,
-                  scale: _immersiveFocus ? (landscape ? 0.72 : 0.82) : 1,
-                  child: _buildSharedTimerVisual(cs, timerState),
+                  alignment: visualAlignment,
+                  child: AnimatedScale(
+                    duration: const Duration(milliseconds: 620),
+                    curve: Curves.easeInOutCubicEmphasized,
+                    scale: _immersiveFocus ? (landscape ? 0.72 : 0.82) : 1,
+                    child: _buildSharedTimerVisual(cs, timerState),
+                  ),
                 ),
               ),
-              AnimatedAlign(
-                duration: const Duration(milliseconds: 620),
-                curve: Curves.easeInOutCubicEmphasized,
-                alignment: buttonAlignment,
-                child: _buildSharedPrimaryButton(cs, timerState),
+              Padding(
+                padding: EdgeInsets.only(bottom: bottomInset),
+                child: AnimatedAlign(
+                  duration: const Duration(milliseconds: 620),
+                  curve: Curves.easeInOutCubicEmphasized,
+                  alignment: buttonAlignment,
+                  child: _buildSharedPrimaryButton(cs, timerState),
+                ),
               ),
               SafeArea(
                 child: AnimatedOpacity(
@@ -209,9 +218,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
         begin: 0,
         end: timerState.progress.clamp(0.0, 1.0).toDouble(),
       ),
-      duration: timerState.isRunning
-          ? const Duration(seconds: 1)
-          : Duration.zero,
+      duration:
+          timerState.isRunning ? const Duration(seconds: 1) : Duration.zero,
       curve: Curves.linear,
       builder: (context, progress, _) => SizedBox.square(
         dimension: 300,
@@ -235,7 +243,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                   letterSpacing: 6,
                   color: cs.onSurface,
                   shadows: [
-                    Shadow(color: cs.primary.withValues(alpha: 0.24), blurRadius: 24),
+                    Shadow(
+                        color: cs.primary.withValues(alpha: 0.24),
+                        blurRadius: 24),
                   ],
                 ),
               ),
@@ -306,9 +316,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
   }
 
   Widget _buildNormalOptions(ColorScheme cs, TimerState timerState) {
-    // 底部预留悬浮玻璃导航栏的高度
+    // SafeArea 已消费底部导航 inset，这里仅保留与旧版一致的 14px 间距
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 96),
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 14),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -667,9 +677,8 @@ class _DurationRowState extends State<_DurationRow> {
                       '${m}min',
                       style: TextStyle(
                         fontSize: 11,
-                        fontWeight: active
-                            ? FontWeight.w600
-                            : FontWeight.normal,
+                        fontWeight:
+                            active ? FontWeight.w600 : FontWeight.normal,
                       ),
                     ),
                     onPressed: () {
