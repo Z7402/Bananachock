@@ -48,9 +48,8 @@ class SettingsScreen extends ConsumerWidget {
               _Item(
                 icon: Icons.wallpaper,
                 title: "更换背景壁纸",
-                subtitle: wallpaper.hasWallpaper
-                    ? "已设置壁纸，点击更换"
-                    : "使用本地图片自动适配色调",
+                subtitle:
+                    wallpaper.hasWallpaper ? "已设置壁纸，点击更换" : "使用本地图片自动适配色调",
                 onTap: () => _pickWallpaper(context, ref),
               ),
               if (wallpaper.hasWallpaper) ...[
@@ -139,7 +138,7 @@ class SettingsScreen extends ConsumerWidget {
               _Item(
                 icon: Icons.system_update_rounded,
                 title: "检查更新",
-                subtitle: "当前版本 v1.1.8 · 手动检查 GitHub Release",
+                subtitle: "当前版本 v1.1.9 · 手动检查 GitHub Release",
                 onTap: () => _checkUpdate(context, ref),
               ),
             ],
@@ -151,7 +150,7 @@ class SettingsScreen extends ConsumerWidget {
               _Item(
                 icon: Icons.info_outline,
                 title: "关于 Bananachock",
-                subtitle: "v1.1.8 | 作者、项目与技术支持",
+                subtitle: "v1.1.9 | 作者、项目与技术支持",
                 onTap: () => Navigator.of(
                   context,
                 ).push(GlassPageRoute(builder: (_) => const _AboutScreen())),
@@ -179,15 +178,15 @@ class SettingsScreen extends ConsumerWidget {
           result.error != null
               ? Icons.error_outline_rounded
               : result.updateAvailable
-              ? Icons.rocket_launch_rounded
-              : Icons.check_circle_outline_rounded,
+                  ? Icons.rocket_launch_rounded
+                  : Icons.check_circle_outline_rounded,
         ),
         title: Text(
           result.error != null
               ? "检查更新失败"
               : result.updateAvailable
-              ? "发现 v${result.latestVersion}"
-              : "已是最新版本",
+                  ? "发现 v${result.latestVersion}"
+                  : "已是最新版本",
         ),
         content: SingleChildScrollView(
           child: Text(
@@ -219,9 +218,8 @@ class SettingsScreen extends ConsumerWidget {
 
   Future<void> _pickWallpaper(BuildContext context, WidgetRef ref) async {
     try {
-      final selected = await ref
-          .read(wallpaperProvider.notifier)
-          .pickWallpaper();
+      final selected =
+          await ref.read(wallpaperProvider.notifier).pickWallpaper();
       if (!context.mounted || !selected) return;
       ScaffoldMessenger.of(
         context,
@@ -296,120 +294,121 @@ class _AboutScreen extends StatelessWidget {
         children: [
           const MeshBackground(),
           ListView(
-        padding: EdgeInsets.fromLTRB(
-          20,
-          MediaQuery.paddingOf(context).top + kToolbarHeight + 16,
-          20,
-          MediaQuery.paddingOf(context).bottom + 32,
-        ),
-        children: [
-          Center(
-            child: Container(
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color.lerp(cs.primaryContainer, Colors.white, 0.2)!,
-                    cs.primaryContainer,
-                  ],
+            padding: EdgeInsets.fromLTRB(
+              20,
+              MediaQuery.paddingOf(context).top + kToolbarHeight + 16,
+              20,
+              MediaQuery.paddingOf(context).bottom + 32,
+            ),
+            children: [
+              Center(
+                child: Container(
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color.lerp(cs.primaryContainer, Colors.white, 0.2)!,
+                        cs.primaryContainer,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.4),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: cs.primary.withValues(alpha: 0.25),
+                        blurRadius: 28,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.timer_rounded,
+                    size: 48,
+                    color: cs.onPrimaryContainer,
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.4),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: cs.primary.withValues(alpha: 0.25),
-                    blurRadius: 28,
-                    offset: const Offset(0, 12),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "Bananachock",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                "v1.1.9",
+                textAlign: TextAlign.center,
+                style:
+                    TextStyle(color: cs.primary, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                "专注计时、长期时间记录与统计复盘工具。通过沉浸式光影动画，让每一次专注都更自然、更有节奏。",
+                textAlign: TextAlign.center,
+                style: TextStyle(height: 1.55, color: cs.onSurfaceVariant),
+              ),
+              const SizedBox(height: 28),
+              _AboutCard(
+                title: "作者",
+                children: [
+                  const ListTile(
+                    leading: Icon(Icons.person_outline_rounded),
+                    title: Text("Z7402"),
+                    subtitle: Text("Bananachock 设计与开发"),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.open_in_new_rounded),
+                    title: const Text("GitHub 个人主页"),
+                    subtitle: const Text("github.com/Z7402"),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => _openLink(context, _authorUrl),
                   ),
                 ],
               ),
-              child: Icon(
-                Icons.timer_rounded,
-                size: 48,
-                color: cs.onPrimaryContainer,
+              const SizedBox(height: 16),
+              _AboutCard(
+                title: "开源项目",
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.code_rounded),
+                    title: const Text("Bananachock GitHub 仓库"),
+                    subtitle: const Text("查看源代码、版本发布与开发动态"),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => _openLink(context, _repositoryUrl),
+                  ),
+                ],
               ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            "Bananachock",
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            "v1.1.8",
-            textAlign: TextAlign.center,
-            style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            "专注计时、长期时间记录与统计复盘工具。通过沉浸式光影动画，让每一次专注都更自然、更有节奏。",
-            textAlign: TextAlign.center,
-            style: TextStyle(height: 1.55, color: cs.onSurfaceVariant),
-          ),
-          const SizedBox(height: 28),
-          _AboutCard(
-            title: "作者",
-            children: [
-              const ListTile(
-                leading: Icon(Icons.person_outline_rounded),
-                title: Text("Z7402"),
-                subtitle: Text("Bananachock 设计与开发"),
+              const SizedBox(height: 16),
+              _AboutCard(
+                title: "技术支持",
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.support_agent_rounded),
+                    title: const Text("问题反馈与功能建议"),
+                    subtitle: const Text("通过 GitHub Issues 提交问题"),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => _openLink(context, _supportUrl),
+                  ),
+                  const ListTile(
+                    leading: Icon(Icons.developer_board_rounded),
+                    title: Text("主要技术"),
+                    subtitle: Text(
+                      "Flutter · Dart · Riverpod · Material 3\nAndroid ARM64 · GitHub Actions",
+                    ),
+                  ),
+                ],
               ),
-              ListTile(
-                leading: const Icon(Icons.open_in_new_rounded),
-                title: const Text("GitHub 个人主页"),
-                subtitle: const Text("github.com/Z7402"),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => _openLink(context, _authorUrl),
+              const SizedBox(height: 24),
+              Text(
+                "Made with focus by Z7402",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _AboutCard(
-            title: "开源项目",
-            children: [
-              ListTile(
-                leading: const Icon(Icons.code_rounded),
-                title: const Text("Bananachock GitHub 仓库"),
-                subtitle: const Text("查看源代码、版本发布与开发动态"),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => _openLink(context, _repositoryUrl),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _AboutCard(
-            title: "技术支持",
-            children: [
-              ListTile(
-                leading: const Icon(Icons.support_agent_rounded),
-                title: const Text("问题反馈与功能建议"),
-                subtitle: const Text("通过 GitHub Issues 提交问题"),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => _openLink(context, _supportUrl),
-              ),
-              const ListTile(
-                leading: Icon(Icons.developer_board_rounded),
-                title: Text("主要技术"),
-                subtitle: Text(
-                  "Flutter · Dart · Riverpod · Material 3\nAndroid ARM64 · GitHub Actions",
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            "Made with focus by Z7402",
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-          ),
             ],
           ),
         ],

@@ -127,12 +127,19 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
               ? (landscape
                   ? const Alignment(-0.48, -0.05)
                   : const Alignment(0, -0.30))
-              : const Alignment(0, -0.16);
+              : (landscape
+                  ? const Alignment(-0.56, 0.08)
+                  : const Alignment(0, -0.16));
           final buttonAlignment = _immersiveFocus
               ? (landscape
                   ? const Alignment(0.56, 0.08)
                   : const Alignment(0, 0.50))
-              : const Alignment(0, 0.28);
+              : (landscape
+                  ? const Alignment(0.58, -0.54)
+                  : const Alignment(0, 0.28));
+          final visualScale = _immersiveFocus
+              ? (landscape ? 0.72 : 0.82)
+              : (landscape ? 0.68 : 1.0);
           // 普通模式下 body 含底部导航 inset（extendBody），补偿后与旧版
           // “body 高度不含导航栏”的对齐几何一致；沉浸模式 inset 归零全屏。
           final bottomInset = MediaQuery.paddingOf(context).bottom;
@@ -162,7 +169,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                   child: AnimatedScale(
                     duration: const Duration(milliseconds: 620),
                     curve: Curves.easeInOutCubicEmphasized,
-                    scale: _immersiveFocus ? (landscape ? 0.72 : 0.82) : 1,
+                    scale: visualScale,
                     child: _buildSharedTimerVisual(cs, timerState),
                   ),
                 ),
@@ -184,7 +191,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
                     ignoring: _immersiveFocus,
                     child: Align(
                       alignment: Alignment.bottomCenter,
-                      child: _buildNormalOptions(cs, timerState),
+                      child: _buildNormalOptions(cs, timerState, landscape),
                     ),
                   ),
                 ),
@@ -315,74 +322,89 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
     );
   }
 
-  Widget _buildNormalOptions(ColorScheme cs, TimerState timerState) {
-    // SafeArea 已消费底部导航 inset，这里仅保留与旧版一致的 14px 间距
+  Widget _buildNormalOptions(
+    ColorScheme cs,
+    TimerState timerState,
+    bool landscape,
+  ) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 14),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (!timerState.isRunning)
-            SizedBox(
-              width: 240,
-              child: TextField(
-                controller: _taskNameController,
-                decoration: InputDecoration(
-                  hintText:
-                      '本次${timerState.mode == TimerMode.pomodoro ? '专注' : '计时'}任务名…',
-                  isDense: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+      padding: EdgeInsets.fromLTRB(
+        landscape ? 0 : 24,
+        0,
+        landscape ? 18 : 24,
+        landscape ? 10 : 14,
+      ),
+      child: Align(
+        alignment: landscape ? Alignment.bottomRight : Alignment.bottomCenter,
+        child: SizedBox(
+          width: landscape ? 280 : null,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!timerState.isRunning)
+                SizedBox(
+                  width: 240,
+                  child: TextField(
+                    controller: _taskNameController,
+                    decoration: InputDecoration(
+                      hintText:
+                          '本次${timerState.mode == TimerMode.pomodoro ? '专注' : '计时'}任务名…',
+                      isDense: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: cs.surfaceContainerLow.withValues(alpha: 0.72),
+                    ),
+                    onChanged: (value) => ref
+                        .read(timerProvider.notifier)
+                        .setCurrentTaskName(value.trim()),
                   ),
-                  filled: true,
-                  fillColor: cs.surfaceContainerLow.withValues(alpha: 0.72),
                 ),
-                onChanged: (value) => ref
-                    .read(timerProvider.notifier)
-                    .setCurrentTaskName(value.trim()),
-              ),
-            ),
-          const SizedBox(height: 12),
-          if (timerState.mode == TimerMode.pomodoro && !timerState.isRunning)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _DurationRow(
-                    label: '专注时长',
-                    currentMinutes: timerState.workSeconds ~/ 60,
-                    durations: const [15, 20, 25, 30, 45, 60],
-                    onChanged: (m) =>
-                        ref.read(timerProvider.notifier).setWorkMinutes(m),
+              const SizedBox(height: 12),
+              if (timerState.mode == TimerMode.pomodoro &&
+                  !timerState.isRunning)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _DurationRow(
+                        label: '专注时长',
+                        currentMinutes: timerState.workSeconds ~/ 60,
+                        durations: const [15, 20, 25, 30, 45, 60],
+                        onChanged: (m) =>
+                            ref.read(timerProvider.notifier).setWorkMinutes(m),
+                      ),
+                      const SizedBox(height: 8),
+                      _DurationRow(
+                        label: '休息时长',
+                        currentMinutes: timerState.breakSeconds ~/ 60,
+                        durations: const [3, 5, 8, 10, 15, 20],
+                        onChanged: (m) =>
+                            ref.read(timerProvider.notifier).setBreakMinutes(m),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  _DurationRow(
-                    label: '休息时长',
-                    currentMinutes: timerState.breakSeconds ~/ 60,
-                    durations: const [3, 5, 8, 10, 15, 20],
-                    onChanged: (m) =>
-                        ref.read(timerProvider.notifier).setBreakMinutes(m),
-                  ),
-                ],
-              ),
-            ),
-          // 休息中 → 显示跳过按钮
-          if (timerState.isRunning && timerState.isBreak) ...[
-            const SizedBox(height: 4),
-            OutlinedButton.icon(
-              onPressed: () => ref.read(timerProvider.notifier).skipBreak(),
-              icon: const Icon(Icons.skip_next_rounded),
-              label: const Text('跳过休息'),
-              style: OutlinedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
                 ),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ],
+              // 休息中 → 显示跳过按钮
+              if (timerState.isRunning && timerState.isBreak) ...[
+                const SizedBox(height: 4),
+                OutlinedButton.icon(
+                  onPressed: () => ref.read(timerProvider.notifier).skipBreak(),
+                  icon: const Icon(Icons.skip_next_rounded),
+                  label: const Text('跳过休息'),
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

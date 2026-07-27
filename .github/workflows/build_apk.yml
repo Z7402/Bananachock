@@ -62,6 +62,15 @@ jobs:
             -storepass "$ANDROID_KEYSTORE_PASSWORD" \
             -alias "$ANDROID_KEY_ALIAS" > /dev/null
 
+      - name: Read release version
+        id: version
+        shell: bash
+        run: |
+          version="$(awk '/^version:/ { print $2; exit }' pubspec.yaml)"
+          version="${version%%+*}"
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Build signed ARM64 release APK
         env:
           ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/bananachock-release.p12
@@ -77,13 +86,13 @@ jobs:
           source_apk="build/app/outputs/flutter-apk/app-arm64-v8a-release.apk"
           test -f "$source_apk"
           mkdir -p dist
-          cp "$source_apk" dist/Bananachock-v1.1.8-arm64-v8a.apk
+          cp "$source_apk" "dist/Bananachock-v${{ steps.version.outputs.version }}-arm64-v8a.apk"
 
       - name: Upload ARM64 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bananachock-v1.1.8-arm64-v8a
-          path: dist/Bananachock-v1.1.8-arm64-v8a.apk
+          name: bananachock-v${{ steps.version.outputs.version }}-arm64-v8a
+          path: dist/Bananachock-v${{ steps.version.outputs.version }}-arm64-v8a.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -91,17 +100,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="v1.1.8"
-          title="v1.1.8"
+          version="${{ steps.version.outputs.version }}"
+          tag="v${version}"
+          title="$tag"
           signing_note="使用仓库配置的正式发布密钥签名。"
 
           cat > "$RUNNER_TEMP/release-notes.md" <<EOF
-          ## Bananachock v1.1.8
+          ## Bananachock ${tag}
 
-          - 全面升级液态玻璃 (Liquid Glass) UI：毛玻璃卡片、弹窗、顶栏与悬浮底部导航
-          - 弥散渐变背景、弹簧动效、按压回弹与触觉反馈，弹窗背景动态加深模糊
-          - 深浅色模式下玻璃质感均成立；新增"液态玻璃效果"开关适配低性能设备
-          - 修复统计/设置页底部滚动空间，同步应用内版本与发布产物版本为 v1.1.8
+          - 修复横屏与沉浸计时模式下的布局、导航栏及安全区域适配
+          - 调整普通计时模式的计时器、主按钮和底部选项间距
+          - 同步应用版本与发布产物版本为 ${tag}
 
           ${signing_note}
           EOF

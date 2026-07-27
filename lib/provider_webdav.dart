@@ -51,15 +51,16 @@ class WebDavState {
     bool? isError,
     DateTime? lastBackupAt,
     DateTime? lastRestoreAt,
-  }) => WebDavState(
-    config: config ?? this.config,
-    loading: loading ?? this.loading,
-    configLoaded: configLoaded ?? this.configLoaded,
-    message: clearMessage ? null : message ?? this.message,
-    isError: isError ?? this.isError,
-    lastBackupAt: lastBackupAt ?? this.lastBackupAt,
-    lastRestoreAt: lastRestoreAt ?? this.lastRestoreAt,
-  );
+  }) =>
+      WebDavState(
+        config: config ?? this.config,
+        loading: loading ?? this.loading,
+        configLoaded: configLoaded ?? this.configLoaded,
+        message: clearMessage ? null : message ?? this.message,
+        isError: isError ?? this.isError,
+        lastBackupAt: lastBackupAt ?? this.lastBackupAt,
+        lastRestoreAt: lastRestoreAt ?? this.lastRestoreAt,
+      );
 }
 
 class WebDavNotifier extends StateNotifier<WebDavState> {
@@ -118,9 +119,8 @@ class WebDavNotifier extends StateNotifier<WebDavState> {
       if ({200, 207, 301, 302, 404}.contains(result.statusCode)) {
         state = state.copyWith(
           loading: false,
-          message: result.statusCode == 404
-              ? '服务器连接成功；备份目录将在首次备份时创建'
-              : '连接测试成功',
+          message:
+              result.statusCode == 404 ? '服务器连接成功；备份目录将在首次备份时创建' : '连接测试成功',
           isError: false,
         );
         return true;
@@ -150,7 +150,7 @@ class WebDavNotifier extends StateNotifier<WebDavState> {
         jsonEncode({
           'format': 'bananachock-backup',
           'schemaVersion': 1,
-          'appVersion': '1.1.8',
+          'appVersion': '1.1.9',
           'createdAt': DateTime.now().toUtc().toIso8601String(),
           'preferences': values,
         }),
@@ -218,10 +218,8 @@ class WebDavNotifier extends StateNotifier<WebDavState> {
   }
 
   Future<void> _ensureDirectories(WebDavConfig config) async {
-    final segments = config.remotePath
-        .split('/')
-        .where((e) => e.isNotEmpty)
-        .toList();
+    final segments =
+        config.remotePath.split('/').where((e) => e.isNotEmpty).toList();
     if (segments.length < 2) return;
     var uri = _baseUri(config);
     for (final segment in segments.take(segments.length - 1)) {
@@ -231,8 +229,8 @@ class WebDavNotifier extends StateNotifier<WebDavState> {
       final request = http.Request('MKCOL', uri)
         ..headers.addAll(_headers(config, json: false));
       final response = await request.send().timeout(
-        const Duration(seconds: 15),
-      );
+            const Duration(seconds: 15),
+          );
       if (![201, 405].contains(response.statusCode)) {
         throw Exception(_statusMessage(response.statusCode));
       }
@@ -245,17 +243,15 @@ class WebDavNotifier extends StateNotifier<WebDavState> {
   }
 
   Uri _fileUri(WebDavConfig config) => _baseUri(config).replace(
-    pathSegments: [
-      ..._baseUri(config).pathSegments.where((e) => e.isNotEmpty),
-      ...config.remotePath.split('/').where((e) => e.isNotEmpty),
-    ],
-  );
+        pathSegments: [
+          ..._baseUri(config).pathSegments.where((e) => e.isNotEmpty),
+          ...config.remotePath.split('/').where((e) => e.isNotEmpty),
+        ],
+      );
 
   Uri _directoryUri(WebDavConfig config) {
-    final parts = config.remotePath
-        .split('/')
-        .where((e) => e.isNotEmpty)
-        .toList();
+    final parts =
+        config.remotePath.split('/').where((e) => e.isNotEmpty).toList();
     if (parts.length <= 1) return _baseUri(config);
     return _baseUri(config).replace(
       pathSegments: [
@@ -266,11 +262,11 @@ class WebDavNotifier extends StateNotifier<WebDavState> {
   }
 
   Map<String, String> _headers(WebDavConfig config, {bool json = true}) => {
-    if (config.username.isNotEmpty || config.password.isNotEmpty)
-      'Authorization':
-          'Basic ${base64Encode(utf8.encode('${config.username}:${config.password}'))}',
-    if (json) 'Content-Type': 'application/json; charset=utf-8',
-  };
+        if (config.username.isNotEmpty || config.password.isNotEmpty)
+          'Authorization':
+              'Basic ${base64Encode(utf8.encode('${config.username}:${config.password}'))}',
+        if (json) 'Content-Type': 'application/json; charset=utf-8',
+      };
 
   Future<void> _writePreference(
     SharedPreferences prefs,
@@ -293,12 +289,12 @@ class WebDavNotifier extends StateNotifier<WebDavState> {
   }
 
   String _statusMessage(int code) => switch (code) {
-    401 || 403 => '认证失败，请检查用户名和密码',
-    404 => '服务器地址或远程路径不存在',
-    405 => '服务器不允许此 WebDAV 操作',
-    507 => '云端存储空间不足',
-    _ => 'WebDAV 请求失败（HTTP $code）',
-  };
+        401 || 403 => '认证失败，请检查用户名和密码',
+        404 => '服务器地址或远程路径不存在',
+        405 => '服务器不允许此 WebDAV 操作',
+        507 => '云端存储空间不足',
+        _ => 'WebDAV 请求失败（HTTP $code）',
+      };
 
   String _shortError(Object error) {
     final text = error.toString().replaceFirst('Exception: ', '');
